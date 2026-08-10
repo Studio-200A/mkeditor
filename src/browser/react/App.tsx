@@ -54,7 +54,6 @@ import { ConfirmToolCall } from './components/assistant/ConfirmToolCall';
 import { Sidebar } from './components/Sidebar';
 import { Workspace } from './components/Workspace';
 import { EditorToolbar } from './components/EditorToolbar';
-import { BottomToolbarRight } from './components/BottomToolbarRight';
 import { WindowProvider } from './contexts/WindowContext';
 import { registerMenuActionDispatcher } from '../menuDispatch';
 import type { MenuAction } from '../../app/lib/menuModel';
@@ -161,16 +160,15 @@ export const App: React.FC<AppProps> = ({
                         <FilesProvider>
                           <FileTreeProvider>
                             <TitleBar />
-                            <Navbar />
+                            <EditorToolbar
+                              workspaceGroupRef={workspaceGroupRef}
+                            />
                             <TabBar />
                             <Shell
                               onEditorReady={onEditorReady}
                               workspaceGroupRef={workspaceGroupRef}
                             />
-                            <EditorToolbar
-                              workspaceGroupRef={workspaceGroupRef}
-                            />
-                            <BottomToolbarRight />
+                            <Navbar />
                             <LazyModals />
                             <ConfirmToolCall />
                             <Toaster

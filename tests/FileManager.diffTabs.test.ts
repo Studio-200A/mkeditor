@@ -218,11 +218,9 @@ describe('FileManager.closeTab (diff-tab branch)', () => {
 
     await fm.closeTab('diff://only');
 
-    // One tab remains — the auto-seeded untitled.
-    expect(fm.tabs.size).toBe(1);
-    const remaining = Array.from(fm.tabs.keys())[0];
-    expect(remaining.startsWith('untitled-')).toBe(true);
-    expect(fm.activeFile).toBe(remaining);
+    // No tabs remain — closeTab no longer auto-seeds an untitled.
+    expect(fm.tabs.size).toBe(0);
+    expect(fm.activeFile).toBeNull();
   });
 });
 

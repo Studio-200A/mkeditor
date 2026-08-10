@@ -10,6 +10,9 @@ import {
   registerAssistantStateChangeListener,
   registerToggleRightSidebar,
   toggleRightSidebarExternal,
+  _syncSidebarMirror,
+  _setRestoreSidebarHandler,
+  _notifySidebarStateChange,
 } from '../../assistantUiState';
 
 // Re-export the public seam surface so existing React-side / test
@@ -81,6 +84,11 @@ export const UIStateProvider: React.FC<UIStateProviderProps> = ({
     _syncMirror({ sidebarOpen: rightSidebarOpen, size: rightSidebarSize });
   }, [rightSidebarOpen, rightSidebarSize]);
 
+  // Same mirror sync for the left (file-tree) sidebar.
+  React.useEffect(() => {
+    _syncSidebarMirror(sidebarOpen);
+  }, [sidebarOpen]);
+
   // Hand the restore-side setter up to the seam so BridgeListeners
   // can apply a session-restored state on `from:session:restore`.
   // The setter is paired with both pieces of state — restore
@@ -95,10 +103,25 @@ export const UIStateProvider: React.FC<UIStateProviderProps> = ({
     };
   }, []);
 
-  const toggleSidebar = React.useCallback(
-    () => setSidebarOpen((open) => !open),
-    [],
-  );
+  // Hand the restore-side setter for the left sidebar.
+  React.useEffect(() => {
+    _setRestoreSidebarHandler((open) => setSidebarOpen(open));
+    return () => {
+      _setRestoreSidebarHandler(null);
+    };
+  }, []);
+
+  const toggleSidebar = React.useCallback(() => {
+    setSidebarOpen((open) => !open);
+    // Notify after the state update — the mirror sync effect runs on
+    // the next render, but the save should be queued immediately.
+    _notifySidebarStateChange();
+  }, []);
+
+  const setSidebarOpenWrapper = React.useCallback((open: boolean) => {
+    setSidebarOpen(open);
+    _notifySidebarStateChange();
+  }, []);
 
   const setRightSidebarOpen = React.useCallback((open: boolean) => {
     setRightSidebarOpenState(open);
@@ -127,7 +150,7 @@ export const UIStateProvider: React.FC<UIStateProviderProps> = ({
   const value = React.useMemo(
     () => ({
       sidebarOpen,
-      setSidebarOpen,
+      setSidebarOpen: setSidebarOpenWrapper,
       toggleSidebar,
       rightSidebarOpen,
       setRightSidebarOpen,

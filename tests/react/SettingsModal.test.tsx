@@ -36,6 +36,21 @@ function fakeSettingsProvider(initial: Partial<EditorSettings> = {}) {
     scrollsync: true,
     sessionRestore: true,
     locale: 'en',
+    fileExplorer: { extensions: ['md'] },
+    pasteImages: { directory: './assets' },
+    editorFontFamily:
+      "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
+    previewTextFontFamily:
+      "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif",
+    previewCodeFontFamily:
+      "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
+    editorFontSize: 14,
+    previewTextFontSize: 16,
+    previewCodeFontSize: 14,
+    lineNumbersMinChars: 5,
+    uiZoom: 100,
+    editorZoom: 100,
+    previewZoom: 100,
     ...initial,
   };
   let snapshot: EditorSettings = { ...state };

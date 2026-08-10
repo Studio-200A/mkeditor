@@ -82,6 +82,8 @@ describe('BridgeListeners session handlers', () => {
     renameTab: jest.Mock;
     replaceUntitled: jest.Mock;
     seedUntitled: jest.Mock;
+    isSessionEnabled: jest.Mock;
+    renameDescendantTabs: jest.Mock;
   };
   let mkeditor: { getValue: jest.Mock } & Record<string, jest.Mock>;
 
@@ -112,6 +114,8 @@ describe('BridgeListeners session handlers', () => {
       renameTab: jest.fn(),
       replaceUntitled: jest.fn(),
       seedUntitled: jest.fn(),
+      isSessionEnabled: jest.fn(() => true),
+      renameDescendantTabs: jest.fn(),
     };
 
     const tree = {
@@ -246,17 +250,16 @@ describe('BridgeListeners session handlers', () => {
     expect(files.restoreSession).toHaveBeenCalledWith(envelope);
   });
 
-  it('from:session:restore seeds an untitled tab when no tabs landed', () => {
-    // restoreSession is a no-op against an empty envelope, so the
-    // tabs map stays empty. The handler should fall back to a seed
-    // using the current Monaco buffer (the welcome markdown).
+  it('does not seed when no tabs landed (empty-state overlay handles it)', () => {
+    // The handler no longer auto-seeds an untitled. The Workspace
+    // component shows an empty-state overlay with a "New File"
+    // button instead.
     handlers['from:session:restore']({
       session: null,
       missing: [],
       contents: {},
     });
-    expect(files.seedUntitled).toHaveBeenCalledTimes(1);
-    expect(files.seedUntitled).toHaveBeenCalledWith('welcome-markdown-content');
+    expect(files.seedUntitled).not.toHaveBeenCalled();
   });
 
   it('from:session:restore does NOT seed when restoreSession produced tabs', () => {

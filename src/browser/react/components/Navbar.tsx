@@ -4,11 +4,15 @@ import { useFiles } from '../contexts/FilesContext';
 import { useModals } from '../contexts/ModalsContext';
 import { useUIState } from '../contexts/UIStateContext';
 import { useManagers } from '../contexts/ManagersContext';
+import { useSettings } from '../contexts/SettingsContext';
 import { sonnerToast } from '../../notify';
 import { useCounts } from '../hooks/useCounts';
 import { useTranslation } from '../hooks/useTranslation';
+import { APP_VERSION } from '../../version';
 import { Icon } from './Icon';
 import { Button } from './ui/button';
+import { Label } from './ui/label';
+import { Switch } from './ui/switch';
 import {
   Tooltip,
   TooltipContent,
@@ -17,24 +21,20 @@ import {
 } from './ui/tooltip';
 
 /**
- * Top navbar.
+ * Bottom status bar: file path, counts, settings/shortcuts/AI toggle,
+ * dark mode switch, version.
  */
 export const Navbar: React.FC = () => {
-  const { toggleSidebar, toggleRightSidebar, rightSidebarOpen } = useUIState();
+  const { toggleRightSidebar, rightSidebarOpen } = useUIState();
   const { openModal } = useModals();
   const { mode } = useManagers();
+  const { settings, updateSetting } = useSettings();
   const { t } = useTranslation();
   const { activeFile, tabs } = useFiles();
 
-  // Hide the AI sidebar toggle on web — AI Assistant is desktop-only
-  // (see docs/AI_ASSISTANT.md "Decisions" → "API call location").
   const showAssistantToggle = mode !== 'web';
   const counts = useCounts();
 
-  // Navbar shows the full path of the active file (the tab itself
-  // shows just the filename via tab.name). For untitled scratch
-  // buffers the path is a synthetic `untitled-N` id — fall back to
-  // the tab's name so the label reads "Untitled 1" instead.
   const isUntitled = !activeFile || activeFile.startsWith('untitled');
   const activeFileLabel = React.useMemo(() => {
     if (!activeFile) return null;
@@ -44,9 +44,6 @@ export const Navbar: React.FC = () => {
     return activeFile;
   }, [activeFile, tabs, isUntitled]);
 
-  // Copy the active file's path to the clipboard. Only wired up when
-  // there's a real on-disk path (untitled scratch buffers don't have
-  // one worth copying).
   const handleCopyPath = React.useCallback(() => {
     if (!activeFile || isUntitled) return;
     void navigator.clipboard
@@ -56,19 +53,8 @@ export const Navbar: React.FC = () => {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <nav className="flex items-center justify-between border-b border-border bg-background">
-        <div className="flex items-center gap-2">
-          <Button
-            id="sidebar-toggle"
-            size="icon"
-            variant="ghost"
-            type="button"
-            title={t('navbar:toggle_sidebar')}
-            onClick={toggleSidebar}
-            className="h-7 w-7 text-xs"
-          >
-            <Icon name="bars" />
-          </Button>
+      <nav className="flex items-center justify-between border-t border-border bg-background h-7">
+        <div className="flex items-center gap-2 pl-2">
           <span
             id="active-file"
             className="truncate text-xs text-muted-foreground"
@@ -84,7 +70,7 @@ export const Navbar: React.FC = () => {
                   size="icon"
                   variant="ghost"
                   onClick={handleCopyPath}
-                  className="h-6 w-6 text-muted-foreground hover:text-foreground text-xs"
+                  className="h-5 w-5 text-muted-foreground hover:text-foreground text-xs"
                   aria-label={t('navbar:copy_path_tooltip')}
                 >
                   <Icon name="copy" />
@@ -94,7 +80,7 @@ export const Navbar: React.FC = () => {
             </Tooltip>
           )}
         </div>
-        <div className="flex items-center gap-3 pr-3">
+        <div className="flex items-center gap-3 pr-2">
           <div className="text-xs text-muted-foreground">
             <span>{t('navbar:character_count')}</span>{' '}
             <span id="character-count">{counts.characters}</span>
@@ -142,7 +128,7 @@ export const Navbar: React.FC = () => {
                   type="button"
                   aria-pressed={rightSidebarOpen}
                   onClick={toggleRightSidebar}
-                  className="h-7 w-7 text-xs text-muted-foreground hover:text-foreground"
+                  className="h-5 w-5 text-xs text-muted-foreground hover:text-foreground"
                 >
                   <Icon name="comments" />
                 </Button>
@@ -152,6 +138,27 @@ export const Navbar: React.FC = () => {
               </TooltipContent>
             </Tooltip>
           )}
+          {/* Dark mode toggle */}
+          <div className="flex items-center gap-1">
+            <Icon
+              name="moon"
+              className={settings.effectiveDarkmode ? 'text-yellow-400' : ''}
+            />
+            <Switch
+              id="darkmode-setting"
+              checked={settings.darkmode}
+              onCheckedChange={(v) => updateSetting('darkmode', v)}
+              disabled={mode === 'desktop' && settings.systemtheme}
+            />
+          </div>
+          {/* Version */}
+          <span
+            className="cursor-pointer text-xs text-muted-foreground hover:text-foreground select-none"
+            onClick={() => openModal('about')}
+            title={t('navbar:version_tooltip')}
+          >
+            v{APP_VERSION}
+          </span>
         </div>
       </nav>
     </TooltipProvider>

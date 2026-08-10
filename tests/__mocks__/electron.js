@@ -26,6 +26,7 @@ const BrowserWindow = jest.fn().mockImplementation((opts) => {
       loadFile: jest.fn(),
       setWindowOpenHandler: jest.fn(),
       send: jest.fn(),
+      setZoomFactor: jest.fn(),
     },
     on: jest.fn(),
     once: jest.fn(),

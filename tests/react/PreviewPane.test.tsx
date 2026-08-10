@@ -26,6 +26,15 @@ jest.mock('../../src/browser/extensions/editor/ScrollSync', () => ({
   refreshLines: jest.fn(),
 }));
 
+// Helper: create a fake file manager with at least one tab so the
+// preview pane renders (the empty-state guard skips when tabs=[]).
+function fm(opts: Parameters<typeof fakeFileManager>[0] = {}) {
+  return fakeFileManager({
+    tabs: [{ path: 'test.md', name: 'test.md' }],
+    ...opts,
+  });
+}
+
 describe('<PreviewPane>', () => {
   it('renders the initial markdown after the lazy Markdown chunk loads', async () => {
     const dispatcher = fakeDispatcher();
@@ -71,7 +80,7 @@ describe('<PreviewPane>', () => {
         mode: 'desktop',
         dispatcher: dispatcher as any,
         editorManager: editorManager as any,
-        fileManager: fakeFileManager({
+        fileManager: fm({
           activeFile: 'C:/Users/chris/workspace/foo/readme.md',
         }) as any,
         fileTreeManager: fakeFileTreeManager({
@@ -107,7 +116,7 @@ describe('<PreviewPane>', () => {
         mode: 'desktop',
         dispatcher: dispatcher as any,
         editorManager: editorManager as any,
-        fileManager: fakeFileManager({ activeFile: null }) as any,
+        fileManager: fm({ activeFile: null }) as any,
         fileTreeManager: fakeFileTreeManager({
           nodes: [],
           treeRoot: '/home/chris/notes',
@@ -140,7 +149,7 @@ describe('<PreviewPane>', () => {
         mode: 'desktop',
         dispatcher: dispatcher as any,
         editorManager: editorManager as any,
-        fileManager: fakeFileManager({
+        fileManager: fm({
           activeFile: 'C:/work/readme.md',
         }) as any,
       },
@@ -178,7 +187,7 @@ describe('<PreviewPane>', () => {
         dispatcher: dispatcher as any,
         editorManager: editorManager as any,
         // No active file and no tree root — the transitional state.
-        fileManager: fakeFileManager({ activeFile: null }) as any,
+        fileManager: fm({ activeFile: null }) as any,
         fileTreeManager: fakeFileTreeManager({
           nodes: [],
           treeRoot: null,
@@ -219,7 +228,7 @@ describe('<PreviewPane>', () => {
         mode: 'desktop',
         dispatcher: dispatcher as any,
         editorManager: editorManager as any,
-        fileManager: fakeFileManager({
+        fileManager: fm({
           // Active tab is the diff overlay …
           activeFile: 'diff://tc-1',
           // … but the underlying real file is the editable path the
@@ -265,7 +274,7 @@ describe('<PreviewPane>', () => {
         mode: 'desktop',
         dispatcher: dispatcher as any,
         editorManager: editorManager as any,
-        fileManager: fakeFileManager({
+        fileManager: fm({
           activeFile: 'C:/Users/chris/workspace/foo/readme.md',
         }) as any,
         fileTreeManager: fakeFileTreeManager({
@@ -299,7 +308,7 @@ describe('<PreviewPane>', () => {
         mode: 'desktop',
         dispatcher: dispatcher as any,
         editorManager: editorManager as any,
-        fileManager: fakeFileManager({
+        fileManager: fm({
           activeFile: 'C:/Users/chris/workspace/foo/readme.md',
         }) as any,
         fileTreeManager: fakeFileTreeManager({
@@ -334,7 +343,7 @@ describe('<PreviewPane>', () => {
         mode: 'desktop',
         dispatcher: dispatcher as any,
         editorManager: editorManager as any,
-        fileManager: fakeFileManager({
+        fileManager: fm({
           activeFile: 'C:/Users/chris/workspace/foo/readme.md',
         }) as any,
         fileTreeManager: fakeFileTreeManager({
@@ -368,7 +377,7 @@ describe('<PreviewPane>', () => {
         mode: 'web',
         dispatcher: dispatcher as any,
         editorManager: editorManager as any,
-        fileManager: fakeFileManager({
+        fileManager: fm({
           activeFile: '/workspace/readme.md',
         }) as any,
       },

@@ -44,11 +44,21 @@ const logconfig: LogConfig = { log, logpath };
 
 /** --------------------Auto Updates------------------------------ */
 
-// Configure the auto-update
-// NOTE: This does not work for MacOS without code signing and
-// other bits... Mac users stuck on manual downloads for now.
-autoUpdater.logger = log;
-autoUpdater.autoDownload = true;
+// Portable / custom-fork builds should not phone home to the upstream
+// release feed. Set MKEDITOR_DISABLE_UPDATER=1 in the environment to
+// disable all auto-updater activity (config, check, notifications).
+// The portable build script advises this; advanced users can set it
+// on a standard deb/pkg installation too if they manage updates
+// themselves.
+const DISABLE_UPDATER = process.env.MKEDITOR_DISABLE_UPDATER === '1';
+
+if (!DISABLE_UPDATER) {
+  // Configure the auto-update
+  // NOTE: This does not work for MacOS without code signing and
+  // other bits... Mac users stuck on manual downloads for now.
+  autoUpdater.logger = log;
+  autoUpdater.autoDownload = true;
+}
 
 /** --------------------Custom Protocol--------------------------- */
 
@@ -134,6 +144,9 @@ function main(file: string | null = null) {
   const settings = new AppSettings(context);
   settings.provide('logger', logconfig);
 
+  // Apply UI zoom from persisted settings before the window appears.
+  applyUiZoom(context, settings.applied?.uiZoom);
+
   // Load the main process "bridge" to handle IPC traffic across
   // execution contexts.
   const bridge = new AppBridge(context);
@@ -200,12 +213,19 @@ function main(file: string | null = null) {
       context.webContents.send('from:settings:set', settings.loadFile());
 
       const sessionEnabled = settings.applied?.sessionRestore ?? true;
-      context.webContents.send(
-        'from:session:restore',
-        sessionEnabled
-          ? AppSession.buildRestoreEnvelope(AppSession.load())
-          : { session: null, missing: [], contents: {} },
-      );
+      const envelope = AppSession.buildRestoreEnvelope(AppSession.load());
+      // When session restore is off, still send the envelope so
+      // sidebar visibility and window state are available, but
+      // strip the tab payload — FileManager.restoreSession handles
+      // isSessionEnabled() internally for tab/cursor restore.
+      context.webContents.send('from:session:restore', {
+        ...envelope,
+        session: sessionEnabled
+          ? envelope.session
+          : envelope.session
+            ? { ...envelope.session, tabs: [], activeFile: null }
+            : null,
+      });
 
       // Hydrate the renderer with the sanitized AI Assistant config.
       // The payload exposes per-provider `hasKey: boolean` only —
@@ -238,8 +258,56 @@ function main(file: string | null = null) {
     context = null;
   });
 
-  context.maximize();
+  // Restore window geometry from session.json.
+  const savedSession = AppSession.load();
+  const savedBounds = savedSession?.bounds;
+  const savedMaximized = savedSession?.isMaximized;
+  if (savedBounds && !savedMaximized) {
+    context.setBounds(savedBounds);
+  } else {
+    context.maximize();
+  }
   context.show();
+}
+
+/**
+ * Sanitize and apply a UI zoom value to the renderer. Only accepts values
+ * from the allowed set (75, 80, 90, 100, 110, 125, 150, 175, 200);
+ * everything else falls back to 100. The factor is computed as
+ * `value / 100` so 100 → 1.0, 125 → 1.25, etc.
+ */
+function applyUiZoom(context: BrowserWindow, raw: unknown): void {
+  const allowed = new Set([75, 80, 90, 100, 110, 125, 150, 175, 200]);
+  const value =
+    typeof raw === 'number' && Number.isFinite(raw) && allowed.has(raw)
+      ? raw
+      : 100;
+  context.webContents.setZoomFactor(value / 100);
+}
+
+/**
+ * Persist the current window bounds and maximized state into
+ * session.json so the next launch can restore them. Merges with
+ * the existing session content; only touches bounds/isMaximized.
+ */
+function saveWindowStateToSession(context: BrowserWindow): void {
+  try {
+    const session = AppSession.load();
+    const bounds = context.getBounds();
+    const isMaximized = context.isMaximized();
+    AppSession.save({
+      version: 3,
+      tabs: session?.tabs ?? [],
+      activeFile: session?.activeFile ?? null,
+      workspaceRoot: session?.workspaceRoot ?? null,
+      assistant: session?.assistant,
+      sidebarOpen: session?.sidebarOpen,
+      isMaximized,
+      bounds,
+    });
+  } catch {
+    // best-effort
+  }
 }
 
 /** --------------------App Lifecycle ---------------------------- */
@@ -260,29 +328,34 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 app.on('ready', () => {
-  autoUpdater.checkForUpdatesAndNotify();
+  if (!DISABLE_UPDATER) {
+    autoUpdater.checkForUpdatesAndNotify();
+  }
   let file: string | null = null;
-  if (process.platform === 'win32' && process.argv.length >= 2) {
-    file = process.argv[1];
+  if (process.argv.length >= 2) {
+    file =
+      process.argv.find((arg) => arg.toLowerCase().endsWith('.md')) ?? null;
   }
   main(file);
 });
 
-autoUpdater.on('update-available', async (event) => {
-  context?.webContents.send('from:notification:display', {
-    status: 'info',
-    key: 'notifications:update_available',
-    values: { version: event.version },
+if (!DISABLE_UPDATER) {
+  autoUpdater.on('update-available', async (event) => {
+    context?.webContents.send('from:notification:display', {
+      status: 'info',
+      key: 'notifications:update_available',
+      values: { version: event.version },
+    });
   });
-});
 
-autoUpdater.on('update-downloaded', async (event) => {
-  context?.webContents.send('from:notification:display', {
-    status: 'success',
-    key: 'notifications:update_downloaded',
-    values: { version: event.version },
+  autoUpdater.on('update-downloaded', async (event) => {
+    context?.webContents.send('from:notification:display', {
+      status: 'success',
+      key: 'notifications:update_downloaded',
+      values: { version: event.version },
+    });
   });
-});
+}
 
 // Mainly MacOS...
 app.on('activate', () => {
@@ -291,12 +364,15 @@ app.on('activate', () => {
   }
 });
 
-// MacOS - open with... Also handle files using the same runnning instance
+// MacOS / Linux - open with... Also handle files using the same
+// running instance. The file path is passed by the OS; on Linux it
+// arrives as a command-line argument, on macOS via the event.
 app.on('open-file', (event) => {
   event.preventDefault();
   let file: string | null = null;
-  if (process.platform === 'win32' && process.argv.length >= 2) {
-    file = process.argv[1];
+  if (process.argv.length >= 2) {
+    file =
+      process.argv.find((arg) => arg.toLowerCase().endsWith('.md')) ?? null;
   }
 
   if (!context) {
@@ -321,6 +397,10 @@ app.on('before-quit', (event) => {
 
   event.preventDefault();
   isFlushingSession = true;
+
+  // Save window geometry to session.json so the next launch can
+  // restore the exact window position and size.
+  saveWindowStateToSession(context);
 
   // Two flush requests fan out in parallel — session (FileManager
   // tabs + cursor) and AI conversations. We resolve when BOTH ack

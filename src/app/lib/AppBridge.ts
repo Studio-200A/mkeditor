@@ -135,6 +135,10 @@ export class AppBridge {
     // Save editor settings to file (~/.mkeditor/settings.json)
     this.on('to:settings:save', (event, { settings }) => {
       this.providers.settings?.saveSettingsToFile(settings);
+      // Apply UI zoom immediately when the user changes it.
+      if (settings && typeof settings === 'object' && 'uiZoom' in settings) {
+        this.applyUiZoom(settings.uiZoom);
+      }
     });
 
     // Persist the renderer's open-tab / cursor / scroll session. Fired
@@ -340,9 +344,9 @@ export class AppBridge {
 
     // Provide app locale to renderer
     this.onSync('mked:get-locale', (event) => {
+      const stored = this.providers.settings?.getSetting('locale') ?? 'system';
       const locale =
-        this.providers.settings?.getSetting('locale') ??
-        normalizeLanguage(app.getLocale());
+        stored === 'system' ? normalizeLanguage(app.getLocale()) : stored;
       event.returnValue = locale;
     });
 
@@ -727,6 +731,20 @@ export class AppBridge {
       ipcMain.removeHandler(channel);
     }
     this.invokeChannels = [];
+  }
+
+  /**
+   * Sanitize and apply a UI zoom value. Only accepts values from the
+   * allowed set; everything else falls back to 100.
+   */
+  private applyUiZoom(raw: unknown): void {
+    const allowed = new Set([75, 80, 90, 100, 110, 125, 150, 175, 200]);
+    const value =
+      typeof raw === 'number' && Number.isFinite(raw) && allowed.has(raw)
+        ? raw
+        : 100;
+    if (this.context.isDestroyed()) return;
+    this.context.webContents.setZoomFactor(value / 100);
   }
 
   /**

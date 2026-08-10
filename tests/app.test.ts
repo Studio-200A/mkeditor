@@ -20,8 +20,17 @@ jest.mock('../src/app/lib/AppMenu', () => ({
 jest.mock('../src/app/lib/AppWindow', () => ({
   AppWindow: jest.fn().mockImplementation(() => ({
     register: jest.fn(),
+    saveStateOnQuit: jest.fn(),
   })),
+  __esModule: true,
 }));
+
+// AppWindow.loadState is a static method; the mock above only covers the
+// constructor. Monkey-patch the static on the mock itself so main.ts's
+// call to AppWindow.loadState() resolves during tests.
+const AppWindowMock = require('../src/app/lib/AppWindow');
+(AppWindowMock.AppWindow as unknown as Record<string, unknown>).loadState =
+  jest.fn(() => ({}));
 
 jest.mock('../src/app/lib/AppSettings', () => ({
   AppSettings: jest.fn().mockImplementation(() => ({

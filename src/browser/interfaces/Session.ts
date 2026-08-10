@@ -10,10 +10,11 @@ import type { editor } from 'monaco-editor';
 export interface SessionPayload {
   /**
    * v1 was the original session-restore shape; v2 added the optional
-   * `assistant` view-state block. Loader accepts either; writer
-   * always stamps the current canonical version.
+   * `assistant` view-state block; v3 added `sidebarOpen` and
+   * `isMaximized`. Loader accepts any; writer always stamps the
+   * current canonical version.
    */
-  version: 1 | 2;
+  version: 1 | 2 | 3;
   tabs: SessionTab[];
   activeFile: string | null;
   /** Workspace root path (desktop). Null when no folder is open. */
@@ -24,6 +25,12 @@ export interface SessionPayload {
    * lives in `~/.mkeditor/assistant.json`, not here.
    */
   assistant?: AssistantViewState;
+  /** Left (file-tree) sidebar open state (v3). */
+  sidebarOpen?: boolean;
+  /** Window maximized state (v3). */
+  isMaximized?: boolean;
+  /** Window bounds in windowed mode (v3): x, y, width, height. */
+  bounds?: { x: number; y: number; width: number; height: number };
 }
 
 export interface AssistantViewState {

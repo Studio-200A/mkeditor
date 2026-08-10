@@ -18,7 +18,7 @@ import { join, normalize } from 'path';
 import type { SessionPayload } from '../src/app/interfaces/Session';
 
 const validPayload: SessionPayload = {
-  version: 2,
+  version: 3,
   activeFile: '/abs/path/foo.md',
   workspaceRoot: null,
   tabs: [
@@ -313,7 +313,7 @@ describe('AppSession.save', () => {
 
       const file = normalize(tmpHome + '/.mkeditor/session.json');
       const written = JSON.parse(readFileSync(file, { encoding: 'utf-8' }));
-      expect(written.version).toBe(2);
+      expect(written.version).toBe(3);
     });
   });
 

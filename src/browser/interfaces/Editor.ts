@@ -21,6 +21,16 @@ export interface EditorSettings {
   locale: string;
   fileExplorer: FileExplorerSettings;
   pasteImages: PasteImagesSettings;
+  editorFontFamily: string;
+  previewTextFontFamily: string;
+  previewCodeFontFamily: string;
+  editorFontSize: number;
+  previewTextFontSize: number;
+  previewCodeFontSize: number;
+  lineNumbersMinChars: number;
+  uiZoom: number;
+  editorZoom: number;
+  previewZoom: number;
 }
 
 export type EditorSettingsSnapshot = EditorSettings & {

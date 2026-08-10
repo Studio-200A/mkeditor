@@ -100,6 +100,18 @@ describe('SettingsProvider.loadSettingsFromLocalStorage (web)', () => {
       directory: './assets',
     });
 
+    // New font / zoom fields (4.2.0 custom) — same upgrade story.
+    expect(provider.getSetting('editorFontFamily')).toBe(
+      "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
+    );
+    expect(provider.getSetting('uiZoom')).toBe(100);
+    expect(provider.getSetting('editorZoom')).toBe(100);
+    expect(provider.getSetting('previewZoom')).toBe(100);
+    expect(provider.getSetting('editorFontSize')).toBe(14);
+    expect(provider.getSetting('previewTextFontSize')).toBe(16);
+    expect(provider.getSetting('previewCodeFontSize')).toBe(14);
+    expect(provider.getSetting('lineNumbersMinChars')).toBe(5);
+
     // The merged shape was persisted back so subsequent loads are
     // consistent (sessionRestore now present in storage).
     const upgraded = JSON.parse(
@@ -124,6 +136,19 @@ describe('SettingsProvider.loadSettingsFromLocalStorage (web)', () => {
       locale: 'en',
       fileExplorer: { extensions: ['md'] },
       pasteImages: { directory: './assets' },
+      editorFontFamily:
+        "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
+      previewTextFontFamily:
+        "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif",
+      previewCodeFontFamily:
+        "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
+      editorFontSize: 14,
+      previewTextFontSize: 16,
+      previewCodeFontSize: 14,
+      lineNumbersMinChars: 5,
+      uiZoom: 100,
+      editorZoom: 100,
+      previewZoom: 100,
     };
     localStorage.setItem('mkeditor-settings', JSON.stringify(full));
 

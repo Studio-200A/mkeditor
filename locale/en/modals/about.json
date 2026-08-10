@@ -4,5 +4,6 @@
   "libraries_intro": "MKEditor uses the following open-source libraries:",
   "libraries_list": "monaco, react, tailwind, markdown-it, highlight.js, webpack and electron.",
   "view_source_prefix": "View the source code",
-  "view_source_here": "here"
+  "view_source_here": "here",
+  "modified_by": "Modified by Shawn @"
 }

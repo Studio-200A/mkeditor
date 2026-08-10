@@ -28,6 +28,7 @@ import {
 import {
   applyRestoredAssistantState,
   toggleRightSidebarExternal,
+  applyRestoredSidebarOpen,
 } from '../assistantUiState';
 import { sonnerToast } from '../notify';
 import { showPropertiesExternal } from '../react/contexts/PropertiesContext';
@@ -243,15 +244,9 @@ export function registerBridgeListeners(
       );
     }
     if (envelope) files.restoreSession(envelope);
-    // If nothing landed (no session and no CLI-arg file is queued to
-    // open), seed an `untitled-1` from the welcome markdown that
-    // Monaco was created with. Mirrors the web boot pattern and
-    // avoids "editor has content, but no tab" first-launch UX.
-    // If a CLI file *is* about to open, the `from:file:opened`
-    // handler's `replaceUntitled` swap absorbs this seed in place.
-    if (files.tabs.size === 0) {
-      files.seedUntitled(mkeditor.getValue());
-    }
+    // If nothing landed, leave the editor empty — the Workspace
+    // component renders an empty-state overlay with a "New File"
+    // button. We no longer auto-seed an untitled tab.
     const root = envelope?.session?.workspaceRoot;
     if (root) {
       // Mark openingFolder so `from:folder:opened` treats this as a
@@ -266,6 +261,10 @@ export function registerBridgeListeners(
     const assistant = envelope?.session?.assistant;
     if (assistant) {
       applyRestoredAssistantState(assistant);
+    }
+    // Restore left (file-tree) sidebar visibility (v3 session).
+    if (envelope?.session?.sidebarOpen !== undefined) {
+      applyRestoredSidebarOpen(envelope.session.sidebarOpen);
     }
   });
 
@@ -282,6 +281,9 @@ export function registerBridgeListeners(
     'from:window:state',
     (state: { isMaximized: boolean } | undefined) => {
       manager.setWindowState({ isMaximized: !!state?.isMaximized });
+      // Persist the window state to session.json so isMaximized is
+      // restored on next launch alongside sidebarOpen.
+      files.scheduleSessionSave();
     },
   );
 

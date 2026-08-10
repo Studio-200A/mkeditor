@@ -4,7 +4,7 @@ import { normalize } from 'path';
 import { app, type BrowserWindow } from 'electron';
 import type { SettingsFile } from '../interfaces/Settings';
 import type { Providers } from '../interfaces/Providers';
-import { deepMerge, hasAllKeys, normalizeLanguage } from '../util';
+import { deepMerge, hasAllKeys } from '../util';
 
 /**
  * AppSettings
@@ -37,9 +37,22 @@ export class AppSettings {
     systemtheme: true,
     scrollsync: true,
     sessionRestore: true,
-    locale: normalizeLanguage(app.getLocale()),
+    locale: 'system',
     fileExplorer: { extensions: ['md'] },
     pasteImages: { directory: './assets' },
+    editorFontFamily:
+      "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
+    previewTextFontFamily:
+      "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif",
+    previewCodeFontFamily:
+      "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
+    editorFontSize: 14,
+    previewTextFontSize: 16,
+    previewCodeFontSize: 14,
+    lineNumbersMinChars: 5,
+    uiZoom: 100,
+    editorZoom: 100,
+    previewZoom: 100,
     exportSettings: {
       withStyles: true,
       container: 'container-fluid',
@@ -68,13 +81,19 @@ export class AppSettings {
     this.createFileIfNotExists(this.settings);
     const loaded = this.loadFile() as SettingsFile;
 
+    // Set applied BEFORE the integrity check so that a subsequent
+    // upgrade-merge inside saveSettingsToFile() can overwrite
+    // this.applied with the correctly-merged result; without this
+    // ordering the final assignment (which was previously on the
+    // last line of the constructor) would overwrite the merged
+    // payload with the pre-merge stale `loaded` object.
+    this.applied = loaded;
+
     // Check for settings file integrity
     if (!this.isNewFile && !hasAllKeys(this.settings, loaded)) {
       this.saveSettingsToFile(deepMerge(this.settings, loaded));
+      // saveSettingsToFile has already updated this.applied
     }
-
-    // Set the applied settings for this session.
-    this.applied = loaded;
   }
 
   /**

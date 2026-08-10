@@ -1,5 +1,7 @@
 {
   "document_title": "MKEditor",
   "app_name": "mkeditor",
-  "brand_name": "MKEditor"
+  "brand_name": "MKEditor",
+  "no_open_tabs": "没有打开的标签页",
+  "new_file": "新建文件"
 }
