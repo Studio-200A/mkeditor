@@ -338,6 +338,7 @@ export class BridgeManager {
 
   public menuFolderOpen(): void {
     this.fileTreeManager.openingFolder = true;
+    this.fileTreeManager.openingFolderFromUser = true;
     this.bridge.send('to:folder:open', true);
   }
 

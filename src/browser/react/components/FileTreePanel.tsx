@@ -87,7 +87,7 @@ export const FileTreePanel: React.FC = () => {
   }, [mode, treeRoot, sidebarOpen, setSidebarOpen]);
 
   const handleOpenFolder = React.useCallback(() => {
-    bridgeManager?.bridge.send('to:folder:open', true);
+    bridgeManager?.menuFolderOpen();
   }, [bridgeManager]);
 
   const handleRestoreWorkspace = React.useCallback(() => {

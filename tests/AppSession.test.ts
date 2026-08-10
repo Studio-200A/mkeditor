@@ -18,7 +18,7 @@ import { join, normalize } from 'path';
 import type { SessionPayload } from '../src/app/interfaces/Session';
 
 const validPayload: SessionPayload = {
-  version: 2,
+  version: 3,
   activeFile: '/abs/path/foo.md',
   workspaceRoot: null,
   tabs: [
@@ -60,6 +60,7 @@ function withTempHome<T>(fn: (tmpHome: string) => T): T {
 
 function loadAppSession(tmpHome: string) {
   jest.resetModules();
+  jest.dontMock('fs');
   jest.doMock('os', () => ({
     ...jest.requireActual('os'),
     homedir: () => tmpHome,
@@ -313,7 +314,7 @@ describe('AppSession.save', () => {
 
       const file = normalize(tmpHome + '/.mkeditor/session.json');
       const written = JSON.parse(readFileSync(file, { encoding: 'utf-8' }));
-      expect(written.version).toBe(2);
+      expect(written.version).toBe(3);
     });
   });
 
@@ -335,6 +336,28 @@ describe('AppSession.save', () => {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { AppSession } = require('../src/app/lib/AppSession');
       expect(() => AppSession.save(validPayload)).not.toThrow();
+    });
+  });
+});
+
+describe('AppSession.saveWindowState', () => {
+  it('merges window state without losing the renderer session', () => {
+    withTempHome((tmpHome) => {
+      const AppSession = loadAppSession(tmpHome);
+      AppSession.save({
+        ...validPayload,
+        sidebarOpen: true,
+      });
+
+      const bounds = { x: 10, y: 20, width: 800, height: 600 };
+      AppSession.saveWindowState(false, bounds);
+
+      expect(AppSession.load()).toEqual({
+        ...validPayload,
+        sidebarOpen: true,
+        isMaximized: false,
+        bounds,
+      });
     });
   });
 });

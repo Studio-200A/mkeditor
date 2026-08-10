@@ -131,7 +131,7 @@ describe('FileManager.serializeSession', () => {
 
     const payload = fm.serializeSession();
     expect(payload).toEqual({
-      version: 2,
+      version: 3,
       tabs: [],
       activeFile: null,
       workspaceRoot: null,
@@ -566,7 +566,7 @@ describe('FileManager.scheduleSessionSave', () => {
     expect(saves.length).toBeGreaterThan(0);
   });
 
-  it('does not fire a save when sessionEnabled getter returns false', async () => {
+  it('always fires a save regardless of sessionEnabled getter', async () => {
     const { FileManager, EditorDispatcher } = await loadFileManager();
     const { bridge, sent } = makeBridge();
     const fm = new FileManager(
@@ -579,10 +579,14 @@ describe('FileManager.scheduleSessionSave', () => {
     fm.seedUntitled('hello');
 
     jest.advanceTimersByTime(1000);
-    expect(sent.filter((s) => s.channel === 'to:session:save')).toHaveLength(0);
+    // Session save now fires even when sessionEnabled is false —
+    // sidebar/window state persistence is independent of tab restore.
+    const saves = sent.filter((s) => s.channel === 'to:session:save');
+    expect(saves.length).toBe(1);
+    expect(saves[0].data.sidebarOpen).toBeUndefined();
   });
 
-  it('re-checks the getter at flush time (toggle off during debounce)', async () => {
+  it('fires a save even when the getter flips during debounce', async () => {
     const { FileManager, EditorDispatcher } = await loadFileManager();
     const { bridge, sent } = makeBridge();
     const fm = new FileManager(
@@ -595,11 +599,11 @@ describe('FileManager.scheduleSessionSave', () => {
     fm.setSessionEnabledGetter(() => enabled);
     fm.seedUntitled('hello');
 
-    // User flips the setting off inside the debounce window.
     enabled = false;
     jest.advanceTimersByTime(1000);
 
-    expect(sent.filter((s) => s.channel === 'to:session:save')).toHaveLength(0);
+    // Save still fires — the gate was removed.
+    expect(sent.filter((s) => s.channel === 'to:session:save')).toHaveLength(1);
   });
 });
 
@@ -1011,15 +1015,10 @@ describe('FileManager per-tab dirty tracking', () => {
     fm.seedUntitled('a');
     await fm.closeTab('untitled-1');
 
-    // closeTab opens a fresh untitled-2 (when no tabs left); dirty for
-    // the *closed* path is gone from the snapshot.
-    expect(
-      fm.getSnapshot().tabs.find((t) => t.path === 'untitled-1'),
-    ).toBeUndefined();
-    // The fresh tab is clean.
-    expect(
-      fm.getSnapshot().tabs.find((t) => t.path === 'untitled-2')?.dirty,
-    ).toBe(false);
+    // closeTab no longer auto-creates a new tab when the last tab
+    // closes — the editor shows the empty-state overlay instead.
+    expect(fm.getSnapshot().tabs).toHaveLength(0);
+    expect(fm.activeFile).toBeNull();
   });
 
   it('closeOtherTabs closes every tab except the kept path', async () => {
@@ -1063,15 +1062,9 @@ describe('FileManager per-tab dirty tracking', () => {
 
     await fm.closeAllTabs();
 
-    // closeTab's last-tab branch creates a fresh untitled (we never
-    // leave the user with zero tabs). The three seeded ones are gone;
-    // a single new untitled remains.
-    const remaining = fm.getSnapshot().tabs.map((t) => t.path);
-    expect(remaining).toHaveLength(1);
-    expect(remaining[0]).toMatch(/^untitled-/);
-    expect(['untitled-1', 'untitled-2', 'untitled-3']).not.toContain(
-      remaining[0],
-    );
+    // closeAllTabs no longer auto-seeds an untitled — the workspace
+    // shows an empty-state overlay when there are no tabs.
+    expect(fm.getSnapshot().tabs).toHaveLength(0);
   });
 
   it('closeAllTabs stops the moment the user cancels a dirty-tab prompt (no silent run-through)', async () => {

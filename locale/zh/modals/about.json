@@ -4,5 +4,6 @@
   "libraries_intro": "MKEditor 使用以下开源库：",
   "libraries_list": "monaco、bootstrap、fontawesome、markdown-it、highlight.js、split.js、sweetalert2、webpack 和 electron。",
   "view_source_prefix": "查看源代码",
-  "view_source_here": "此处"
+  "view_source_here": "此处",
+  "modified_by": "由 Shawn 修改 @"
 }

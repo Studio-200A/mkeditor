@@ -27,6 +27,10 @@ import { Switch } from '../ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { AssistantSettings } from '../assistant/AssistantSettings';
 
+const ZOOM_OPTIONS = [75, 80, 90, 100, 110, 125, 150, 175, 200];
+
+const LINE_NUMBER_WIDTH_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
 /**
  * Editor settings dialog. Drives SettingsContext directly — every input
  * change calls `updateSetting(key, value)` which writes state, applies
@@ -121,7 +125,7 @@ export const SettingsModal: React.FC = () => {
               : t('modals-settings:title')}
           </DialogTitle>
         </DialogHeader>
-        <div className="px-4 pb-4 text-sm">
+        <div className="max-h-[calc(100vh-10rem)] overflow-y-auto px-4 pb-4 text-sm">
           <p className="text-muted-foreground">
             {activeTab === 'assistant'
               ? t('modals-settings:intro_assistant')
@@ -218,6 +222,36 @@ export const SettingsModal: React.FC = () => {
                   checked={settings.whitespace}
                   onChange={(v) => updateSetting('whitespace', v)}
                 />
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 flex flex-col gap-1">
+                    <Label htmlFor="line-numbers-min-chars-setting">
+                      {t('modals-settings:line_numbers_min_chars_label')}
+                    </Label>
+                    <small className="text-muted-foreground">
+                      {t('modals-settings:line_numbers_min_chars_help')}
+                    </small>
+                  </div>
+                  <Select
+                    value={String(settings.lineNumbersMinChars ?? 5)}
+                    onValueChange={(v) =>
+                      updateSetting('lineNumbersMinChars', Number(v))
+                    }
+                  >
+                    <SelectTrigger
+                      id="line-numbers-min-chars-setting"
+                      className="w-20"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LINE_NUMBER_WIDTH_OPTIONS.map((n) => (
+                        <SelectItem key={n} value={String(n)}>
+                          {n}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </Section>
 
               <Section label={t('modals-settings:session')}>
@@ -267,6 +301,135 @@ export const SettingsModal: React.FC = () => {
                 </div>
               </Section>
 
+              <Section label={t('modals-settings:fonts')}>
+                <p className="mb-2 text-xs font-semibold text-muted-foreground">
+                  {t('modals-settings:editor_font_section')}
+                </p>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 flex flex-col gap-1">
+                    <Label htmlFor="editor-font-family-setting">
+                      {t('modals-settings:editor_font_label')}
+                    </Label>
+                    <Input
+                      id="editor-font-family-setting"
+                      type="text"
+                      value={settings.editorFontFamily ?? ''}
+                      onChange={(e) =>
+                        updateSetting('editorFontFamily', e.target.value)
+                      }
+                      className="font-mono text-xs"
+                      data-testid="editor-font-family-input"
+                    />
+                    <small className="text-muted-foreground">
+                      {t('modals-settings:editor_font_help')}
+                    </small>
+                  </div>
+                  <div className="w-20 flex flex-col gap-1">
+                    <Label htmlFor="editor-font-size-setting">
+                      {t('modals-settings:editor_font_size_label')}
+                    </Label>
+                    <Input
+                      id="editor-font-size-setting"
+                      type="number"
+                      min={9}
+                      max={72}
+                      value={settings.editorFontSize ?? 14}
+                      onChange={(e) =>
+                        updateSetting(
+                          'editorFontSize',
+                          Number(e.target.value) || 14,
+                        )
+                      }
+                      className="font-mono text-xs"
+                      data-testid="editor-font-size-input"
+                    />
+                  </div>
+                </div>
+                <p className="mb-2 text-xs font-semibold text-muted-foreground">
+                  {t('modals-settings:preview_font_section')}
+                </p>
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="flex-1 flex flex-col gap-1">
+                    <Label htmlFor="preview-text-font-family-setting">
+                      {t('modals-settings:preview_text_font_label')}
+                    </Label>
+                    <Input
+                      id="preview-text-font-family-setting"
+                      type="text"
+                      value={settings.previewTextFontFamily ?? ''}
+                      onChange={(e) =>
+                        updateSetting('previewTextFontFamily', e.target.value)
+                      }
+                      className="font-mono text-xs"
+                      data-testid="preview-text-font-family-input"
+                    />
+                    <small className="text-muted-foreground">
+                      {t('modals-settings:preview_text_font_help')}
+                    </small>
+                  </div>
+                  <div className="w-20 flex flex-col gap-1">
+                    <Label htmlFor="preview-text-font-size-setting">
+                      {t('modals-settings:preview_text_font_size_label')}
+                    </Label>
+                    <Input
+                      id="preview-text-font-size-setting"
+                      type="number"
+                      min={9}
+                      max={72}
+                      value={settings.previewTextFontSize ?? 16}
+                      onChange={(e) =>
+                        updateSetting(
+                          'previewTextFontSize',
+                          Number(e.target.value) || 16,
+                        )
+                      }
+                      className="font-mono text-xs"
+                      data-testid="preview-text-font-size-input"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 flex flex-col gap-1">
+                    <Label htmlFor="preview-code-font-family-setting">
+                      {t('modals-settings:preview_code_font_label')}
+                    </Label>
+                    <Input
+                      id="preview-code-font-family-setting"
+                      type="text"
+                      value={settings.previewCodeFontFamily ?? ''}
+                      onChange={(e) =>
+                        updateSetting('previewCodeFontFamily', e.target.value)
+                      }
+                      className="font-mono text-xs"
+                      data-testid="preview-code-font-family-input"
+                    />
+                    <small className="text-muted-foreground">
+                      {t('modals-settings:preview_code_font_help')}
+                    </small>
+                  </div>
+                  <div className="w-20 flex flex-col gap-1">
+                    <Label htmlFor="preview-code-font-size-setting">
+                      {t('modals-settings:preview_code_font_size_label')}
+                    </Label>
+                    <Input
+                      id="preview-code-font-size-setting"
+                      type="number"
+                      min={9}
+                      max={72}
+                      value={settings.previewCodeFontSize ?? 14}
+                      onChange={(e) =>
+                        updateSetting(
+                          'previewCodeFontSize',
+                          Number(e.target.value) || 14,
+                        )
+                      }
+                      className="font-mono text-xs"
+                      data-testid="preview-code-font-size-input"
+                    />
+                  </div>
+                </div>
+              </Section>
+
               <Section label={t('modals-settings:appearance')}>
                 {mode === 'desktop' && (
                   <SwitchRow
@@ -282,13 +445,20 @@ export const SettingsModal: React.FC = () => {
                     {t('modals-settings:language_label')}
                   </Label>
                   <Select
-                    value={normalizeLanguage(settings.locale || 'en')}
+                    value={
+                      settings.locale === 'system'
+                        ? 'system'
+                        : normalizeLanguage(settings.locale || 'en')
+                    }
                     onValueChange={(v) => updateSetting('locale', v)}
                   >
                     <SelectTrigger id="locale-setting" className="mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="system">
+                        {t('modals-settings:language_system')}
+                      </SelectItem>
                       {locales.map((l) => (
                         <SelectItem key={l.code} value={l.code}>
                           {l.native} ({l.name})
@@ -298,6 +468,82 @@ export const SettingsModal: React.FC = () => {
                   </Select>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {t('modals-settings:language_help')}
+                  </p>
+                </div>
+
+                {mode === 'desktop' && (
+                  <div className="mt-3">
+                    <Label htmlFor="ui-zoom-setting">
+                      {t('modals-settings:ui_zoom_label')}
+                    </Label>
+                    <Select
+                      value={String(settings.uiZoom ?? 100)}
+                      onValueChange={(v) => updateSetting('uiZoom', Number(v))}
+                    >
+                      <SelectTrigger id="ui-zoom-setting" className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ZOOM_OPTIONS.map((z) => (
+                          <SelectItem key={z} value={String(z)}>
+                            {z}%
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {t('modals-settings:ui_zoom_help')}
+                    </p>
+                  </div>
+                )}
+                <div className="mt-3">
+                  <Label htmlFor="editor-zoom-setting">
+                    {t('modals-settings:editor_zoom_label')}
+                  </Label>
+                  <Select
+                    value={String(settings.editorZoom ?? 100)}
+                    onValueChange={(v) =>
+                      updateSetting('editorZoom', Number(v))
+                    }
+                  >
+                    <SelectTrigger id="editor-zoom-setting" className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ZOOM_OPTIONS.map((z) => (
+                        <SelectItem key={z} value={String(z)}>
+                          {z}%
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t('modals-settings:editor_zoom_help')}
+                  </p>
+                </div>
+                <div className="mt-3">
+                  <Label htmlFor="preview-zoom-setting">
+                    {t('modals-settings:preview_zoom_label')}
+                  </Label>
+                  <Select
+                    value={String(settings.previewZoom ?? 100)}
+                    onValueChange={(v) =>
+                      updateSetting('previewZoom', Number(v))
+                    }
+                  >
+                    <SelectTrigger id="preview-zoom-setting" className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ZOOM_OPTIONS.map((z) => (
+                        <SelectItem key={z} value={String(z)}>
+                          {z}%
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t('modals-settings:preview_zoom_help')}
                   </p>
                 </div>
               </Section>

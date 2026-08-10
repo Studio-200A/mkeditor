@@ -9,5 +9,6 @@
   "active_file_default": "MKEditor",
   "copy_path_tooltip": "Copy path to clipboard",
   "path_copied": "Path copied to clipboard",
-  "code_copied": "Code copied to clipboard"
+  "code_copied": "Code copied to clipboard",
+  "version_tooltip": "About MKEditor"
 }

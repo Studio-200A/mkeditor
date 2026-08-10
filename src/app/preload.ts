@@ -16,6 +16,7 @@ const senderWhitelist = [
   'to:title:set',
   'to:editor:state',
   'to:settings:save',
+  'to:renderer:ready',
   'to:session:save',
   'to:session:clear',
   'to:html:export',

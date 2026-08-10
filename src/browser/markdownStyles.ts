@@ -19,6 +19,11 @@
  *  - Custom `:::` alert blocks use a modern flat design: soft tinted
  *    background, coloured left border, and a small uppercase label
  *    rendered via `::before`. No icon font dependency.
+ *  - Text and code font families use CSS custom properties
+ *    (`--mk-preview-text-font-family`, `--mk-preview-code-font-family`)
+ *    with fallbacks matching the upstream defaults. The live preview's
+ *    `.preview-zoom-layer` sets these properties at runtime so the user
+ *    can customise preview fonts without polluting the export output.
  *
  * The constant is consumed in two places:
  *   - `src/browser/index.ts` injects it into a `<style id="md-styles">`
@@ -46,9 +51,25 @@ export const markdownStylesheet = `
 /* ===== Base ===== */
 
 #preview-content {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans',
-    Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
-  font-size: inherit;
+  font-family: var(
+    --mk-preview-text-font-family,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    'Noto Sans',
+    Helvetica,
+    Arial,
+    sans-serif,
+    'Apple Color Emoji',
+    'Segoe UI Emoji'
+  );
+  /* --mk-preview-text-font-size (live-preview-only, set on .preview-zoom-layer)
+     takes priority over --mk-export-font-size (from ExportSettings); the export
+     document has no .preview-zoom-layer so the export value wins there. */
+  font-size: var(
+    --mk-preview-text-font-size,
+    var(--mk-export-font-size, inherit)
+  );
   line-height: inherit;
   color: inherit;
   word-wrap: break-word;
@@ -146,12 +167,20 @@ export const markdownStylesheet = `
 #preview-content tt {
   padding: 0.2em 0.4em;
   margin: 0;
-  font-size: 85%;
+  font-size: var(--mk-preview-code-font-size, 12px);
   white-space: break-spaces;
   background: var(--md-code-bg);
   border-radius: 6px;
-  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
-    'Liberation Mono', monospace;
+  font-family: var(
+    --mk-preview-code-font-family,
+    ui-monospace,
+    SFMono-Regular,
+    'SF Mono',
+    Menlo,
+    Consolas,
+    'Liberation Mono',
+    monospace
+  );
 }
 
 #preview-content pre {
@@ -201,8 +230,16 @@ export const markdownStylesheet = `
 }
 
 #preview-content .md-codeblock-lang {
-  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
-    'Liberation Mono', monospace;
+  font-family: var(
+    --mk-preview-code-font-family,
+    ui-monospace,
+    SFMono-Regular,
+    'SF Mono',
+    Menlo,
+    Consolas,
+    'Liberation Mono',
+    monospace
+  );
   font-weight: 600;
   letter-spacing: 0.02em;
 }
@@ -349,6 +386,16 @@ export const markdownStylesheet = `
   border: solid 1px var(--md-border);
   border-radius: 6px;
   box-shadow: inset 0 -1px 0 var(--md-border);
+  font-family: var(
+    --mk-preview-code-font-family,
+    ui-monospace,
+    SFMono-Regular,
+    'SF Mono',
+    Menlo,
+    Consolas,
+    'Liberation Mono',
+    monospace
+  );
 }
 
 /* ===== Container width (ExportSettings.container) ===== */

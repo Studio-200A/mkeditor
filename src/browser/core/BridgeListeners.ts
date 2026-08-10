@@ -28,6 +28,8 @@ import {
 import {
   applyRestoredAssistantState,
   toggleRightSidebarExternal,
+  applyRestoredSidebarOpen,
+  setSidebarOpenExternal,
 } from '../assistantUiState';
 import { sonnerToast } from '../notify';
 import { showPropertiesExternal } from '../react/contexts/PropertiesContext';
@@ -46,6 +48,24 @@ export function registerBridgeListeners(
   tree: FileTreeManager,
   manager: BridgeManager,
 ) {
+  let themeRestored = false;
+  let settingsRestored = false;
+  let sessionRestored = false;
+  let rendererReadySent = false;
+  const notifyRendererReady = () => {
+    if (
+      rendererReadySent ||
+      !themeRestored ||
+      !settingsRestored ||
+      !sessionRestored
+    ) {
+      return;
+    }
+    rendererReadySent = true;
+    // Let React commit context updates before main reveals the window.
+    setTimeout(() => bridge.send('to:renderer:ready', null), 0);
+  };
+
   const loadSettingsFromBridgeListener = (settings: SettingsFile) => {
     mkeditor.updateOptions({
       autoIndent: settings.autoindent ? 'advanced' : 'none',
@@ -67,6 +87,8 @@ export function registerBridgeListeners(
   // Apply the OS theme pushed from main.
   bridge.receive('from:theme:set', (shouldUseDarkMode: boolean) => {
     providers.settings?.setOsDarkmode(shouldUseDarkMode);
+    themeRestored = true;
+    notifyRendererReady();
   });
 
   // Set settings from stored settings file (%HOME%/.mkeditor/settings.json).
@@ -76,6 +98,8 @@ export function registerBridgeListeners(
     loadSettingsFromBridgeListener(s);
     providers.settings?.setSettings(s);
     providers.exportSettings?.setSettings(s.exportSettings);
+    settingsRestored = true;
+    notifyRendererReady();
   });
 
   // File / folder menu actions delegate to BridgeManager helpers so the
@@ -88,6 +112,7 @@ export function registerBridgeListeners(
 
   // Handle post-folder open events
   bridge.receive('from:folder:opened', async ({ tree: t, path }) => {
+    const openedByUser = tree.openingFolderFromUser;
     const rootChanged = !tree.treeRoot || !path.startsWith(tree.treeRoot);
     // Genuine workspace switch (had a root, now have a different one).
     const switchingWorkspace = rootChanged && tree.treeRoot !== null;
@@ -97,14 +122,17 @@ export function registerBridgeListeners(
         // User cancelled the unsaved-changes prompt. Don't adopt the
         // new tree, don't publish the new workspace root to main.
         tree.openingFolder = false;
+        tree.openingFolderFromUser = false;
         return;
       }
     }
     if (tree.openingFolder || rootChanged) {
       tree.treeRoot = path;
       tree.openingFolder = false;
+      tree.openingFolderFromUser = false;
     }
     tree.buildFileTree(t, path);
+    if (openedByUser) setSidebarOpenExternal(true);
     // Persist the new workspace root if it changed. Sub-directory
     // expands (lazy-load) reuse the existing root, so they don't need
     // their own save trigger.
@@ -243,15 +271,9 @@ export function registerBridgeListeners(
       );
     }
     if (envelope) files.restoreSession(envelope);
-    // If nothing landed (no session and no CLI-arg file is queued to
-    // open), seed an `untitled-1` from the welcome markdown that
-    // Monaco was created with. Mirrors the web boot pattern and
-    // avoids "editor has content, but no tab" first-launch UX.
-    // If a CLI file *is* about to open, the `from:file:opened`
-    // handler's `replaceUntitled` swap absorbs this seed in place.
-    if (files.tabs.size === 0) {
-      files.seedUntitled(mkeditor.getValue());
-    }
+    // If nothing landed, leave the editor empty — the Workspace
+    // component renders an empty-state overlay with a "New File"
+    // button. We no longer auto-seed an untitled tab.
     const root = envelope?.session?.workspaceRoot;
     if (root) {
       // Mark openingFolder so `from:folder:opened` treats this as a
@@ -267,6 +289,12 @@ export function registerBridgeListeners(
     if (assistant) {
       applyRestoredAssistantState(assistant);
     }
+    // Restore left (file-tree) sidebar visibility (v3 session).
+    if (envelope?.session?.sidebarOpen !== undefined) {
+      applyRestoredSidebarOpen(envelope.session.sidebarOpen);
+    }
+    sessionRestored = true;
+    notifyRendererReady();
   });
 
   // Final flush ahead of quit. Main's `before-quit` hook sends this
@@ -282,6 +310,9 @@ export function registerBridgeListeners(
     'from:window:state',
     (state: { isMaximized: boolean } | undefined) => {
       manager.setWindowState({ isMaximized: !!state?.isMaximized });
+      // Persist the window state to session.json so isMaximized is
+      // restored on next launch alongside sidebarOpen.
+      files.scheduleSessionSave();
     },
   );
 

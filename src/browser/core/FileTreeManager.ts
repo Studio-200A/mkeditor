@@ -38,6 +38,9 @@ export class FileTreeManager {
   /** Flag to indicate a new root folder is being opened */
   public openingFolder = false;
 
+  /** Distinguishes a user picker action from session workspace restore. */
+  public openingFolderFromUser = false;
+
   /** Index of directory nodes by path for fast lazy-load targeting. */
   private directoryIndex: Map<string, TreeNode> = new Map();
 

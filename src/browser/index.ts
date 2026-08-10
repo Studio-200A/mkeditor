@@ -7,7 +7,6 @@ import { EditorDispatcher } from './events/EditorDispatcher';
 import { initI18n, changeLanguage } from './i18n';
 import { markdownStylesheet } from './markdownStyles';
 import { getExecutionBridge, logger } from './util';
-import { showSplashScreen } from './splash';
 
 import { App } from './react/App';
 import type { Managers } from './react/contexts/ManagersContext';
@@ -15,6 +14,11 @@ import {
   getCurrentAssistantState,
   registerAssistantStateChangeListener,
 } from './react/contexts/UIStateContext';
+import {
+  getCurrentSidebarOpen,
+  registerSidebarStateChangeListener,
+  setWindowMaximizedGetter,
+} from './assistantUiState';
 
 // The bi-directional synchronous bridge to the main execution context.
 // Exposed on the window object through the preloader.
@@ -190,8 +194,6 @@ function onEditorReady() {
     onEditorReadyInner();
   } catch (err) {
     logger?.error('index.onEditorReady', JSON.stringify(err));
-  } finally {
-    showSplashScreen({ duration: 750 });
   }
 }
 
@@ -261,6 +263,18 @@ function onEditorReadyInner() {
     bridgeManager.fileManager.notifyAssistantStateChanged(),
   );
 
+  // Left (file-tree) sidebar state → session persistence.
+  bridgeManager.fileManager.setSidebarOpenGetter(getCurrentSidebarOpen);
+  registerSidebarStateChangeListener(() =>
+    bridgeManager.fileManager.scheduleSessionSave(),
+  );
+
+  // Window maximized state → session persistence.
+  setWindowMaximizedGetter(() => bridgeManager.getWindowState().isMaximized);
+  bridgeManager.fileManager.setWindowMaximizedGetter(
+    () => bridgeManager.getWindowState().isMaximized,
+  );
+
   // Paste-image plumbing.
   const settingsProvider = editorManager.providers.settings;
   if (settingsProvider) {
@@ -310,20 +324,10 @@ function onEditorReadyInner() {
       bridgeManager.setLanguage(lng);
     };
   } else {
-    // Block session saves until bootstrap + restore land. Without this,
-    // `seedUntitled` below fires `scheduleSessionSave`, whose 300 ms
-    // debounce can race ahead of the async `bootstrap()` and overwrite
-    // the previously-good session with the seeded-untitled-only state.
+    // Block session saves until bootstrap + restore land.
     // `FileManager.restoreSession` clears the suspension on entry, so
     // the very next user-driven change persists as normal.
     bridgeManager.fileManager.suspendSessionSaves();
-
-    // Web mode: seed FileManager with an `untitled-1` tab so the
-    // current Monaco buffer has a tab and shows up in the title bar.
-    // If a session is later restored (via bootstrap below) and it
-    // tracks an `untitled-1`, FileManager.restoreSession overwrites
-    // the seeded content with the session's saved content.
-    bridgeManager.fileManager.seedUntitled(mkeditor.getValue());
 
     // Boot the web bridge: silent workspace restore + session load +
     // legacy `mkeditor-content` migration + `beforeunload` flush. The

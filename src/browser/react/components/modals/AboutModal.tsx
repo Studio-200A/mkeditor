@@ -37,6 +37,18 @@ export const AboutModal: React.FC = () => {
             </a>
             .
           </p>
+          <p>
+            <span>{t('modals-about:modified_by')}</span>{' '}
+            <a
+              className="font-bold text-primary no-underline"
+              href="https://github.com/Studio-200A"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Studio 200A
+            </a>
+            .
+          </p>
           <p className="mb-1 mt-3">
             <span>{t('modals-about:libraries_intro')}</span>
           </p>

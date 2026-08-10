@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { createPortal } from 'react-dom';
 import type { GroupImperativeHandle } from 'react-resizable-panels';
 
 import { HTMLExporter } from '../../core/HTMLExporter';
@@ -9,6 +8,7 @@ import type { ToolbarDropdownKey } from '../../core/providers/CommandProvider';
 import { dom } from '../../dom';
 import { useManagers } from '../contexts/ManagersContext';
 import { useModals } from '../contexts/ModalsContext';
+import { useUIState } from '../contexts/UIStateContext';
 import { useTranslation } from '../hooks/useTranslation';
 import { Icon } from './Icon';
 import { Button } from './ui/button';
@@ -116,17 +116,14 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
   const openExportSettingsModal = () => openModal('exportSettings');
   const handleDelete = () => editorManager?.resetContent();
+  const { toggleSidebar } = useUIState();
 
-  // Find the host once; we render via createPortal into the static
-  // `<div id="editor-functions">`.
-  const [host, setHost] = React.useState<HTMLElement | null>(null);
-  React.useEffect(() => {
-    setHost(document.getElementById('editor-functions'));
-  }, []);
-  if (!host) return null;
-
-  const content = (
-    <div className="flex items-center gap-1">
+  return (
+    <div className="flex items-center gap-1 border-b border-border bg-background px-2">
+      <ToolbarButton onClick={toggleSidebar} title={t('navbar:toggle_sidebar')}>
+        <Icon name="bars" />
+      </ToolbarButton>
+      <Separator />
       <ToolbarButton
         title={t('toolbar:reset_split')}
         onClick={handleResetSplit}
@@ -188,7 +185,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <Button
             type="button"
             size="sm"
-            variant="outline"
+            variant="ghost"
             title={t('toolbar:table_menu_tooltip')}
             className="h-7 w-7 p-0"
           >
@@ -224,12 +221,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
               }
             />
           </div>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={insertTable}
-          >
+          <Button type="button" size="sm" variant="ghost" onClick={insertTable}>
             {t('menus-tables:insert_table')}
           </Button>
         </PopoverContent>
@@ -250,7 +242,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <Button
             type="button"
             size="sm"
-            variant="outline"
+            variant="ghost"
             title={t('toolbar:codeblock_menu_tooltip')}
             className="h-7 w-7 p-0"
           >
@@ -288,7 +280,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <Button
             type="button"
             size="sm"
-            variant="outline"
+            variant="ghost"
             title={t('toolbar:alert_menu_tooltip')}
             className="h-7 w-7 p-0"
           >
@@ -372,8 +364,6 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
       </Button>
     </div>
   );
-
-  return createPortal(content, host);
 };
 
 /* -------------------------------------------------------------------- */
@@ -388,7 +378,7 @@ const ToolbarButton: React.FC<{
   <Button
     type="button"
     size="sm"
-    variant="outline"
+    variant="ghost"
     title={title}
     onClick={onClick}
     className="h-7 w-7 p-0"

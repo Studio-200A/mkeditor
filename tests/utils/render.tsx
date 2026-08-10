@@ -273,7 +273,11 @@ export function buildManagers(overrides: Partial<Managers> = {}): Managers {
         exportSettings: null,
       },
     } as any,
-    fileManager: null,
+    fileManager:
+      overrides.fileManager ??
+      (fakeFileManager({
+        tabs: [{ path: 'test.md', name: 'test.md' }],
+      }) as any),
     fileTreeManager: null,
     bridgeManager: null,
     assistantManager: null,

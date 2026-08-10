@@ -11,11 +11,10 @@
 export interface SessionPayload {
   /**
    * Format version. v1 was the original session-restore shape; v2 adds
-   * the optional `assistant` view-state block. The loader accepts either
-   * version (a v1 file loads with `assistant` undefined) and the writer
-   * always stamps the current `AppSession.SCHEMA_VERSION` (2 today).
+   * the optional `assistant` view-state block; v3 adds `sidebarOpen`
+   * and `isMaximized`.
    */
-  version: 1 | 2;
+  version: 1 | 2 | 3;
   /** Insertion order is tab order. */
   tabs: SessionTab[];
   /** Path of the active tab. Must match a `tabs[].path` or be null. */
@@ -34,6 +33,12 @@ export interface SessionPayload {
    * layout/visibility snapshot the renderer hydrates at boot.
    */
   assistant?: AssistantViewState;
+  /** Left (file-tree) sidebar visibility (v3). */
+  sidebarOpen?: boolean;
+  /** Window maximized state (v3). */
+  isMaximized?: boolean;
+  /** Window bounds in windowed mode (v3): x, y, width, height. */
+  bounds?: { x: number; y: number; width: number; height: number };
 }
 
 export interface AssistantViewState {

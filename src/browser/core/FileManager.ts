@@ -188,6 +188,10 @@ export class FileManager {
    */
   private assistantStateGetter: (() => AssistantViewState | null) | null = null;
 
+  private sidebarOpenGetter: (() => boolean) | null = null;
+
+  private windowMaximizedGetter: (() => boolean) | null = null;
+
   /**
    * Optional callback returning whether the user has session restore
    * enabled in their settings. Injected by the composition root so
@@ -570,16 +574,11 @@ export class FileManager {
         this.scheduleSessionSave();
         return 'closed';
       }
-      // No tabs left — open a fresh untitled.
-      const newPath = `untitled-${this.untitledCounter++}`;
-      const newName = `Untitled ${this.untitledCounter - 1}`;
-      const model = editor.createModel('', 'markdown');
-      this.models.set(newPath, model);
-      this.originals.set(newPath, '');
-      this.tabs.set(newPath, { path: newPath, name: newName, dirty: false });
-      this.trackTab(newPath, model);
-      this.activateFile(newPath, newName);
+      // No tabs left — the editor is now empty. Show the empty-state
+      // overlay (handled by React Workspace). Don't auto-create an
+      // untitled here; the user must explicitly create a new file.
       mdl.dispose();
+      this.emitChange();
       this.scheduleSessionSave();
       return 'closed';
     }
@@ -913,16 +912,9 @@ export class FileManager {
         this.scheduleSessionSave();
         return;
       }
-      // No tabs left — open a fresh untitled (same fallback the
-      // regular closeTab path uses when the last tab closes).
-      const newPath = `untitled-${this.untitledCounter++}`;
-      const newName = `Untitled ${this.untitledCounter - 1}`;
-      const model = editor.createModel('', 'markdown');
-      this.models.set(newPath, model);
-      this.originals.set(newPath, '');
-      this.tabs.set(newPath, { path: newPath, name: newName, dirty: false });
-      this.trackTab(newPath, model);
-      this.activateFile(newPath, newName);
+      // No tabs left — the editor is now empty. Same behavior as
+      // closeTab: show the empty-state overlay, don't auto-create
+      // an untitled.
       this.scheduleSessionSave();
       return;
     }
@@ -1133,6 +1125,23 @@ export class FileManager {
   }
 
   /**
+   * Inject a getter for left (file-tree) sidebar open state. Wired
+   * through the `assistantUiState` seam so FileManager stays React-free.
+   */
+  public setSidebarOpenGetter(fn: () => boolean): void {
+    this.sidebarOpenGetter = fn;
+  }
+
+  /**
+   * Inject a getter for window maximized state. Wired through the
+   * `assistantUiState` seam; the composition root points it at
+   * BridgeManager.
+   */
+  public setWindowMaximizedGetter(fn: () => boolean): void {
+    this.windowMaximizedGetter = fn;
+  }
+
+  /**
    * Public trigger used by UIStateContext when the right-sidebar
    * open/size changes. Re-uses the existing debounced session save
    * pipeline so AI Assistant view-state churn coalesces with tab
@@ -1168,7 +1177,7 @@ export class FileManager {
    * to `true` when no getter is registered so first-boot writes (before
    * settings land) aren't silently dropped.
    */
-  private isSessionEnabled(): boolean {
+  public isSessionEnabled(): boolean {
     return this.sessionEnabledGetter ? this.sessionEnabledGetter() : true;
   }
 
@@ -1223,13 +1232,17 @@ export class FileManager {
     }
 
     const payload: SessionPayload = {
-      version: 2,
+      version: 3,
       tabs,
       activeFile,
       workspaceRoot: this.workspaceRootGetter?.() ?? null,
     };
     const assistant = this.assistantStateGetter?.();
     if (assistant) payload.assistant = assistant;
+    const sidebarOpen = this.sidebarOpenGetter?.();
+    if (sidebarOpen !== undefined) payload.sidebarOpen = sidebarOpen;
+    const isMaximized = this.windowMaximizedGetter?.();
+    if (isMaximized !== undefined) payload.isMaximized = isMaximized;
     return payload;
   }
 
@@ -1388,7 +1401,10 @@ export class FileManager {
   public scheduleSessionSave(): void {
     if (this.restoring) return;
     if (this.sessionSaveSuspended) return;
-    if (!this.isSessionEnabled()) return;
+    // Always allow save — even when sessionRestore is off, sidebar
+    // visibility and window state changes must be persisted. The
+    // restore side (restoreSession) gates tab/cursor restore on
+    // isSessionEnabled() independently.
     if (!this.debouncedSessionSave) {
       this.debouncedSessionSave = debounce(() => {
         // Re-check on flush: the user may have flipped the setting off
@@ -1397,7 +1413,6 @@ export class FileManager {
         // clear the suspend). The persisted file is left untouched so
         // a later flip back on / restoreSession resumes the prior state.
         if (this.sessionSaveSuspended) return;
-        if (!this.isSessionEnabled()) return;
         this.bridge.send('to:session:save', this.serializeSession());
       }, 300);
     }

@@ -32,11 +32,14 @@ describe('AppBridge to:session:save handler', () => {
     jest.clearAllMocks();
   });
 
-  it('forwards the renderer payload to AppSession.save', () => {
+  it('merges the current window state into the renderer payload', () => {
+    const bounds = { x: 10, y: 20, width: 800, height: 600 };
     const context = {
       webContents: { id: 1, send: jest.fn() },
       setTitle: jest.fn(),
       once: jest.fn(),
+      isMaximized: jest.fn(() => false),
+      getNormalBounds: jest.fn(() => bounds),
     } as never;
     const bridge = new AppBridge(context);
     bridge.register();
@@ -64,7 +67,11 @@ describe('AppBridge to:session:save handler', () => {
     handler({ sender: { id: 1 } }, payload);
 
     expect(AppSession.save).toHaveBeenCalledTimes(1);
-    expect(AppSession.save).toHaveBeenCalledWith(payload);
+    expect(AppSession.save).toHaveBeenCalledWith({
+      ...payload,
+      isMaximized: false,
+      bounds,
+    });
   });
 });
 

@@ -2,7 +2,9 @@
   "app": {
     "document_title": "MKEditor",
     "app_name": "mkeditor",
-    "brand_name": "MKEditor"
+    "brand_name": "MKEditor",
+    "no_open_tabs": "没有打开的标签页",
+    "new_file": "新建文件"
   },
   "assistant-chat": {
     "new_conversation": "新对话",
@@ -213,7 +215,8 @@
     "libraries_intro": "MKEditor 使用以下开源库：",
     "libraries_list": "monaco、bootstrap、fontawesome、markdown-it、highlight.js、split.js、sweetalert2、webpack 和 electron。",
     "view_source_prefix": "查看源代码",
-    "view_source_here": "此处"
+    "view_source_here": "此处",
+    "modified_by": "由 Shawn 修改 @"
   },
   "modals-export": {
     "title": "导出设置",
@@ -287,12 +290,33 @@
     "systemtheme_help": "允许系统主题覆盖已保存的设置。",
     "language_label": "语言",
     "language_help": "选择界面语言。",
+    "language_system": "跟随系统",
     "save_settings": "保存设置",
     "tab_general": "常规设置",
     "tab_assistant": "AI 提供商",
     "paste_images": "粘贴的图像",
     "paste_images_directory_label": "粘贴图像目录",
-    "paste_images_directory_help": "相对路径（例如 './assets'）会基于当前 Markdown 文件所在文件夹解析。绝对路径必须位于已打开的工作区内。"
+    "paste_images_directory_help": "相对路径（例如 './assets'）会基于当前 Markdown 文件所在文件夹解析。绝对路径必须位于已打开的工作区内。",
+    "fonts": "字体",
+    "editor_font_section": "编辑区",
+    "editor_font_label": "编辑文本字体",
+    "editor_font_help": "Monaco Markdown 编辑器使用的 CSS font-family 列表。",
+    "preview_font_section": "预览区",
+    "preview_text_font_label": "文本字体",
+    "preview_text_font_help": "渲染后的 Markdown 正文使用的 CSS font-family 列表。",
+    "preview_code_font_label": "代码字体",
+    "preview_code_font_help": "渲染后的 Markdown 代码使用的 CSS font-family 列表。",
+    "ui_zoom_label": "UI 缩放",
+    "ui_zoom_help": "缩放应用程序界面。仅桌面版有效。",
+    "editor_zoom_label": "编辑区缩放",
+    "editor_zoom_help": "缩放编辑器中的 Markdown 源文本。",
+    "preview_zoom_label": "预览区缩放",
+    "preview_zoom_help": "缩放实时预览，不影响导出尺寸。",
+    "editor_font_size_label": "字号",
+    "preview_text_font_size_label": "字号",
+    "preview_code_font_size_label": "字号",
+    "line_numbers_min_chars_label": "行号宽度",
+    "line_numbers_min_chars_help": "编辑区左侧行号占用的最小字符数。"
   },
   "modals-shortcuts": {
     "title": "MKEditor 快捷键",
@@ -364,7 +388,8 @@
     "code_copied": "代码已复制到剪贴板",
     "copy_path_tooltip": "将路径复制到剪贴板",
     "path_copied": "路径已复制到剪贴板",
-    "toggle_assistant_tooltip": "切换 AI 助手"
+    "toggle_assistant_tooltip": "切换 AI 助手",
+    "version_tooltip": "关于 MKEditor"
   },
   "notifications": {
     "unable_export_preview": "无法导出预览",

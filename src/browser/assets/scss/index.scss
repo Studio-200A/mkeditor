@@ -33,13 +33,6 @@ body[data-theme='dark'] {
   background: #aaaaaa;
 }
 
-// Hidden at boot; showSplashScreen() fades these in together once Monaco
-// is ready, so nothing peeks through the fading splash overlay.
-#react-root,
-body > nav {
-  opacity: 0;
-}
-
 // Splash overlay.
 //
 // Three stacked layers:

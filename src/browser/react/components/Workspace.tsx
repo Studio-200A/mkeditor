@@ -7,6 +7,10 @@ import {
 } from 'react-resizable-panels';
 
 import { useManagers } from '../contexts/ManagersContext';
+import { useFiles } from '../contexts/FilesContext';
+import { useTranslation } from '../hooks/useTranslation';
+import { Button } from './ui/button';
+import { Icon } from './Icon';
 import { EditorHost } from './EditorHost';
 import { EditorPaneDiffOverlay } from './EditorPaneDiffOverlay';
 import { PreviewPane } from './PreviewPane';
@@ -31,7 +35,15 @@ export const Workspace: React.FC<WorkspaceProps> = ({
   groupRef,
   onEditorReady,
 }) => {
-  const { editorManager } = useManagers();
+  const { editorManager, bridgeManager } = useManagers();
+  const { tabs } = useFiles();
+  const { t } = useTranslation();
+
+  const createNewFile = React.useCallback(() => {
+    if (bridgeManager) {
+      bridgeManager.menuFileNew();
+    }
+  }, [bridgeManager]);
 
   return (
     <Group orientation="horizontal" id="editor-preview" groupRef={groupRef}>
@@ -53,6 +65,15 @@ export const Workspace: React.FC<WorkspaceProps> = ({
         <div className="relative h-full w-full">
           <EditorHost onReady={onEditorReady} />
           <EditorPaneDiffOverlay />
+          {tabs.length === 0 && (
+            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-popover text-muted-foreground">
+              <p className="text-lg font-semibold">{t('app:no_open_tabs')}</p>
+              <Button variant="outline" size="sm" onClick={createNewFile}>
+                <Icon name="plus" />
+                <span>{t('app:new_file')}</span>
+              </Button>
+            </div>
+          )}
         </div>
       </Panel>
       <Separator className="gutter gutter-horizontal" />

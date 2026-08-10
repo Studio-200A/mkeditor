@@ -49,14 +49,17 @@ export class AppSession {
    *
    * v1 → v2: added the optional `assistant` right-sidebar
    * view-state block.
+   *
+   * v2 → v3: added optional `sidebarOpen` (left file-tree sidebar)
+   * and `isMaximized` (window state) fields.
    */
-  private static readonly SCHEMA_VERSION = 2;
+  private static readonly SCHEMA_VERSION = 3;
 
   /**
    * Versions the loader is willing to read. Anything outside this set
    * falls back to "no session" (the safer half of forward-compat).
    */
-  private static readonly SUPPORTED_VERSIONS: ReadonlyArray<number> = [1, 2];
+  private static readonly SUPPORTED_VERSIONS: ReadonlyArray<number> = [1, 2, 3];
 
   /**
    * Read and validate the persisted session. Returns null if:
@@ -124,6 +127,23 @@ export class AppSession {
         // ignore
       }
     }
+  }
+
+  /** Merge window geometry into the canonical session without losing tabs. */
+  static saveWindowState(
+    isMaximized: boolean,
+    bounds: { x: number; y: number; width: number; height: number },
+  ): void {
+    const current = AppSession.load();
+    AppSession.save({
+      version: 3,
+      tabs: [],
+      activeFile: null,
+      workspaceRoot: null,
+      ...current,
+      isMaximized,
+      bounds,
+    });
   }
 
   /**
@@ -202,6 +222,10 @@ export class AppSession {
         // (optional). Filtering wouldn't make sense — it's a pure UI
         // snapshot with no main-side validation to perform.
         assistant: payload.assistant,
+        // v3 fields — pass through verbatim.
+        sidebarOpen: payload.sidebarOpen,
+        isMaximized: payload.isMaximized,
+        bounds: payload.bounds,
       },
       missing,
       contents,
@@ -218,6 +242,9 @@ export class AppSession {
     const candidate = value as Partial<SessionPayload> & {
       workspaceRoot?: unknown;
       assistant?: unknown;
+      sidebarOpen?: unknown;
+      isMaximized?: unknown;
+      bounds?: unknown;
     };
     if (
       typeof candidate.version !== 'number' ||
@@ -248,6 +275,29 @@ export class AppSession {
     if ('assistant' in candidate && candidate.assistant !== undefined) {
       if (!AppSession.isValidAssistantState(candidate.assistant)) return false;
     }
+    // `sidebarOpen` and `isMaximized` arrived in v3. Both optional
+    // for backward compatibility; when present they must be booleans.
+    if (
+      'sidebarOpen' in candidate &&
+      candidate.sidebarOpen !== undefined &&
+      typeof candidate.sidebarOpen !== 'boolean'
+    ) {
+      return false;
+    }
+    if (
+      'isMaximized' in candidate &&
+      candidate.isMaximized !== undefined &&
+      typeof candidate.isMaximized !== 'boolean'
+    ) {
+      return false;
+    }
+    if (
+      'bounds' in candidate &&
+      candidate.bounds !== undefined &&
+      !AppSession.isValidBounds(candidate.bounds)
+    ) {
+      return false;
+    }
     for (const tab of candidate.tabs) {
       if (!AppSession.isValidTab(tab)) return false;
     }
@@ -274,5 +324,16 @@ export class AppSession {
       return false;
     }
     return true;
+  }
+
+  private static isValidBounds(value: unknown): boolean {
+    if (typeof value !== 'object' || value === null) return false;
+    const b = value as Record<string, unknown>;
+    return (
+      typeof b.x === 'number' &&
+      typeof b.y === 'number' &&
+      typeof b.width === 'number' &&
+      typeof b.height === 'number'
+    );
   }
 }

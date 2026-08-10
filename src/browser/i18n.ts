@@ -155,11 +155,22 @@ export function getUserLocale(mode: 'desktop' | 'web') {
     }
   }
 
-  if (!supportedLocales.includes(normalizeLanguage(userLocale))) {
-    userLocale = 'en';
-  }
+  return resolveLocale(userLocale, mode);
+}
 
-  return userLocale;
+/**
+ * Convert a stored locale value (which may be 'system') to a concrete
+ * language code. When 'system', resolves the OS/browser language.
+ */
+export function resolveLocale(lng: string, mode: 'desktop' | 'web'): string {
+  if (lng !== 'system') return lng;
+  if (mode === 'desktop') {
+    if (window.mked) {
+      return normalizeLanguage(window.mked.getAppLocale());
+    }
+    return 'en';
+  }
+  return normalizeLanguage(navigator.language);
 }
 
 /**

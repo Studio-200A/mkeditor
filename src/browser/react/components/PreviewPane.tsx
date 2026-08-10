@@ -12,7 +12,9 @@ import { logger } from '../../util';
 import { useFiles } from '../contexts/FilesContext';
 import { useFileTree } from '../contexts/FileTreeContext';
 import { useManagers } from '../contexts/ManagersContext';
+import { useSettings } from '../contexts/SettingsContext';
 import { useTranslation } from '../hooks/useTranslation';
+import type { SettingsProvider } from '../../core/providers/SettingsProvider';
 
 // Markdown.ts pulls in markdown-it, KaTeX, highlight.js core + 13
 // language modules — ~400 KB of code that isn't needed until the
@@ -41,11 +43,36 @@ function loadMarkdown(): Promise<MarkdownAPI> {
  *   up these React-rendered elements once they mount.
  */
 export const PreviewPane: React.FC = () => {
-  const { mode, editorManager, dispatcher, fileManager } = useManagers();
-  const { activeFile } = useFiles();
+  const { mode, editorManager, dispatcher, fileManager, providers } =
+    useManagers();
+  const { tabs, activeFile } = useFiles();
   const { treeRoot } = useFileTree();
+  const { settings } = useSettings();
   const { t } = useTranslation();
   const contentRef = React.useRef<HTMLDivElement>(null);
+  const zoomLayerRef = React.useRef<HTMLDivElement>(null);
+
+  const settingsProvider = providers.settings as SettingsProvider | null;
+
+  // Apply preview fonts and zoom on mount (SettingsProvider's applyAll
+  // runs before the .preview-zoom-layer element exists in the DOM).
+  React.useEffect(() => {
+    settingsProvider?.applyPreviewFonts();
+    settingsProvider?.applyPreviewZoom();
+  }, [settingsProvider]);
+
+  // Re-apply preview fonts and zoom when these settings change.
+  React.useEffect(() => {
+    settingsProvider?.applyPreviewFonts();
+  }, [
+    settings.previewTextFontFamily,
+    settings.previewCodeFontFamily,
+    settingsProvider,
+  ]);
+
+  React.useEffect(() => {
+    settingsProvider?.applyPreviewZoom();
+  }, [settings.previewZoom, settingsProvider]);
 
   const activeEditablePath = React.useMemo(
     () => fileManager?.getActiveEditablePath() ?? null,
@@ -58,9 +85,11 @@ export const PreviewPane: React.FC = () => {
   // would tear down and re-bind the editor:render listener and reload
   // the markdown chunk on every tab switch).
   const baseInfoRef = React.useRef({ mode, activeEditablePath, treeRoot });
+  const tabsRef = React.useRef(tabs);
   React.useEffect(() => {
     baseInfoRef.current = { mode, activeEditablePath, treeRoot };
-  }, [mode, activeEditablePath, treeRoot]);
+    tabsRef.current = tabs;
+  }, [mode, activeEditablePath, treeRoot, tabs]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -68,6 +97,12 @@ export const PreviewPane: React.FC = () => {
 
     const render = () => {
       if (!contentRef.current || !md) return;
+      // When no tabs are open the editor is in empty state — clear the
+      // preview so the welcome markdown doesn't leak through.
+      if (tabsRef.current.length === 0) {
+        contentRef.current.innerHTML = '';
+        return;
+      }
       const html = md.render(editorManager?.getValue() ?? '');
       contentRef.current.innerHTML = '';
       contentRef.current.appendChild(
@@ -137,7 +172,13 @@ export const PreviewPane: React.FC = () => {
 
   return (
     <div id="preview" className="flex flex-col split-preview p-3">
-      <div ref={contentRef} id="preview-content" className="container-fluid" />
+      <div ref={zoomLayerRef} className="preview-zoom-layer">
+        <div
+          ref={contentRef}
+          id="preview-content"
+          className="container-fluid"
+        />
+      </div>
     </div>
   );
 };

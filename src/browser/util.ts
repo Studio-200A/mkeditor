@@ -175,6 +175,12 @@ export function syncPreviewToExportSettings(
     elem.classList.add(settings.container);
   }
 
-  elem.style.fontSize = `${settings.fontSize}px`;
+  // Use a CSS custom property for font-size rather than an inline
+  // style so that the live-preview-only --mk-preview-text-font-size
+  // (set by SettingsProvider on .preview-zoom-layer) takes
+  // precedence when the user has configured a custom preview font
+  // size. In exported HTML the .preview-zoom-layer doesn't exist,
+  // so the export font-size fallback wins.
+  elem.style.setProperty('--mk-export-font-size', `${settings.fontSize}px`);
   elem.style.lineHeight = settings.lineSpacing.toString();
 }

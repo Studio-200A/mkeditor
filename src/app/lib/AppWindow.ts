@@ -1,4 +1,5 @@
 import { ipcMain, type BrowserWindow, type IpcMainEvent } from 'electron';
+import { AppSession } from './AppSession';
 
 /**
  * AppWindow
@@ -33,6 +34,7 @@ export class AppWindow {
     channel: string;
     handler: (...args: unknown[]) => void;
   }> = [];
+  private saveBoundsTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(context: BrowserWindow, register = false) {
     this.context = context;
@@ -87,8 +89,17 @@ export class AppWindow {
       this.context.webContents.paste();
     });
 
-    this.context.on('maximize', () => this.emitState(true));
-    this.context.on('unmaximize', () => this.emitState(false));
+    this.context.on('maximize', () => {
+      this.emitState(true);
+      this.saveWindowState();
+    });
+    this.context.on('unmaximize', () => {
+      this.emitState(false);
+      this.saveWindowState();
+    });
+    this.context.on('resize', () => this.scheduleWindowStateSave());
+    this.context.on('move', () => this.scheduleWindowStateSave());
+    this.context.on('close', () => this.saveWindowState());
 
     // Tear down IPC listeners when this window closes so we don't leak
     // handlers (macOS recreates the window via `app.on('activate')`)
@@ -123,6 +134,7 @@ export class AppWindow {
   }
 
   private dispose(): void {
+    if (this.saveBoundsTimer) clearTimeout(this.saveBoundsTimer);
     for (const { channel, handler } of this.listeners) {
       ipcMain.removeListener(channel, handler);
     }
@@ -132,5 +144,21 @@ export class AppWindow {
   private emitState(isMaximized: boolean): void {
     if (this.context.isDestroyed()) return;
     this.context.webContents.send('from:window:state', { isMaximized });
+  }
+
+  private scheduleWindowStateSave(): void {
+    if (this.saveBoundsTimer) clearTimeout(this.saveBoundsTimer);
+    this.saveBoundsTimer = setTimeout(() => {
+      this.saveBoundsTimer = null;
+      this.saveWindowState();
+    }, 300);
+  }
+
+  private saveWindowState(): void {
+    if (this.context.isDestroyed()) return;
+    AppSession.saveWindowState(
+      this.context.isMaximized(),
+      this.context.getNormalBounds(),
+    );
   }
 }

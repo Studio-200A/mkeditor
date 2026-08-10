@@ -33,10 +33,14 @@ jest.mock('../src/browser/react/contexts/PropertiesContext', () => ({
 // React-free — see `src/browser/assistantUiState.ts`.)
 jest.mock('../src/browser/assistantUiState', () => ({
   applyRestoredAssistantState: jest.fn(),
+  setSidebarOpenExternal: jest.fn(),
 }));
 
 import { sonnerToast } from '../src/browser/notify';
-import { applyRestoredAssistantState } from '../src/browser/assistantUiState';
+import {
+  applyRestoredAssistantState,
+  setSidebarOpenExternal,
+} from '../src/browser/assistantUiState';
 import { registerBridgeListeners } from '../src/browser/core/BridgeListeners';
 import type { SessionRestoreEnvelope } from '../src/browser/interfaces/Session';
 import type {
@@ -69,6 +73,13 @@ describe('BridgeListeners session handlers', () => {
     setWindowState: jest.Mock;
     assistantManager: typeof assistantManager;
   };
+  let tree: {
+    openingFolder: boolean;
+    openingFolderFromUser: boolean;
+    treeRoot: string | null;
+    buildFileTree: jest.Mock;
+    addFileToTree: jest.Mock;
+  };
   let files: {
     restoreSession: jest.Mock;
     serializeSession: jest.Mock;
@@ -82,6 +93,9 @@ describe('BridgeListeners session handlers', () => {
     renameTab: jest.Mock;
     replaceUntitled: jest.Mock;
     seedUntitled: jest.Mock;
+    isSessionEnabled: jest.Mock;
+    renameDescendantTabs: jest.Mock;
+    scheduleSessionSave: jest.Mock;
   };
   let mkeditor: { getValue: jest.Mock } & Record<string, jest.Mock>;
 
@@ -112,10 +126,14 @@ describe('BridgeListeners session handlers', () => {
       renameTab: jest.fn(),
       replaceUntitled: jest.fn(),
       seedUntitled: jest.fn(),
+      isSessionEnabled: jest.fn(() => true),
+      renameDescendantTabs: jest.fn(),
+      scheduleSessionSave: jest.fn(),
     };
 
-    const tree = {
+    tree = {
       openingFolder: false,
+      openingFolderFromUser: false,
       treeRoot: null,
       buildFileTree: jest.fn(),
       addFileToTree: jest.fn(),
@@ -173,6 +191,41 @@ describe('BridgeListeners session handlers', () => {
     };
     handlers['from:session:restore'](envelope);
     expect(files.restoreSession).toHaveBeenCalledWith(envelope);
+  });
+
+  it('opens the file-tree sidebar after a user-selected folder loads', async () => {
+    tree.openingFolder = true;
+    tree.openingFolderFromUser = true;
+
+    await handlers['from:folder:opened']({ tree: [], path: '/workspace' });
+
+    expect(setSidebarOpenExternal).toHaveBeenCalledWith(true);
+    expect(tree.openingFolderFromUser).toBe(false);
+  });
+
+  it('keeps the saved sidebar state during session workspace restore', async () => {
+    tree.openingFolder = true;
+    tree.openingFolderFromUser = false;
+
+    await handlers['from:folder:opened']({ tree: [], path: '/workspace' });
+
+    expect(setSidebarOpenExternal).not.toHaveBeenCalled();
+  });
+
+  it('notifies main after theme, settings, and session restore are applied', () => {
+    jest.useFakeTimers();
+    handlers['from:theme:set'](true);
+    handlers['from:settings:set']({ exportSettings: {} });
+    handlers['from:session:restore']({
+      session: null,
+      missing: [],
+      contents: {},
+    });
+
+    expect(bridge.send).not.toHaveBeenCalledWith('to:renderer:ready', null);
+    jest.runOnlyPendingTimers();
+    expect(bridge.send).toHaveBeenCalledWith('to:renderer:ready', null);
+    jest.useRealTimers();
   });
 
   it('from:session:restore forwards the assistant block to UIStateContext when present', () => {
@@ -246,17 +299,16 @@ describe('BridgeListeners session handlers', () => {
     expect(files.restoreSession).toHaveBeenCalledWith(envelope);
   });
 
-  it('from:session:restore seeds an untitled tab when no tabs landed', () => {
-    // restoreSession is a no-op against an empty envelope, so the
-    // tabs map stays empty. The handler should fall back to a seed
-    // using the current Monaco buffer (the welcome markdown).
+  it('does not seed when no tabs landed (empty-state overlay handles it)', () => {
+    // The handler no longer auto-seeds an untitled. The Workspace
+    // component shows an empty-state overlay with a "New File"
+    // button instead.
     handlers['from:session:restore']({
       session: null,
       missing: [],
       contents: {},
     });
-    expect(files.seedUntitled).toHaveBeenCalledTimes(1);
-    expect(files.seedUntitled).toHaveBeenCalledWith('welcome-markdown-content');
+    expect(files.seedUntitled).not.toHaveBeenCalled();
   });
 
   it('from:session:restore does NOT seed when restoreSession produced tabs', () => {

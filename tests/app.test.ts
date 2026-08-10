@@ -20,8 +20,36 @@ jest.mock('../src/app/lib/AppMenu', () => ({
 jest.mock('../src/app/lib/AppWindow', () => ({
   AppWindow: jest.fn().mockImplementation(() => ({
     register: jest.fn(),
+    saveStateOnQuit: jest.fn(),
   })),
+  __esModule: true,
 }));
+
+jest.mock('../src/app/lib/AppSession', () => ({
+  AppSession: {
+    load: jest.fn(() => ({
+      version: 3,
+      tabs: [],
+      activeFile: null,
+      workspaceRoot: null,
+      isMaximized: false,
+      bounds: { x: 10, y: 20, width: 800, height: 600 },
+    })),
+    saveWindowState: jest.fn(),
+    buildRestoreEnvelope: jest.fn(() => ({
+      session: null,
+      missing: [],
+      contents: {},
+    })),
+  },
+}));
+
+// AppWindow.loadState is a static method; the mock above only covers the
+// constructor. Monkey-patch the static on the mock itself so main.ts's
+// call to AppWindow.loadState() resolves during tests.
+const AppWindowMock = require('../src/app/lib/AppWindow');
+(AppWindowMock.AppWindow as unknown as Record<string, unknown>).loadState =
+  jest.fn(() => ({}));
 
 jest.mock('../src/app/lib/AppSettings', () => ({
   AppSettings: jest.fn().mockImplementation(() => ({
@@ -38,17 +66,46 @@ jest.mock('../src/app/lib/AppStorage', () => ({
   },
 }));
 
-import { app, BrowserWindow, nativeTheme } from 'electron';
+import { app, BrowserWindow, ipcMain, nativeTheme } from 'electron';
+import { AppSession } from '../src/app/lib/AppSession';
 
 describe('Electron main app', () => {
   it('creates main window on ready', () => {
     require('../src/app/main');
+    (AppSession.load as jest.Mock).mockReturnValueOnce({
+      version: 3,
+      tabs: [],
+      activeFile: null,
+      workspaceRoot: null,
+      isMaximized: true,
+      bounds: { x: 10, y: 20, width: 800, height: 600 },
+    });
     const readyHandler = app.on.mock.calls.find(
       (c: any) => c[0] === 'ready',
     )[1];
     readyHandler();
     expect(BrowserWindow).toHaveBeenCalled();
     expect(app.on).toHaveBeenCalledWith('ready', expect.any(Function));
+    const winInstance = (BrowserWindow as unknown as jest.Mock).mock.results[0]
+      ?.value;
+    expect(winInstance.setBounds).toHaveBeenCalledWith({
+      x: 10,
+      y: 20,
+      width: 800,
+      height: 600,
+    });
+    expect(winInstance.maximize).not.toHaveBeenCalled();
+    expect(winInstance.show).not.toHaveBeenCalled();
+
+    const readyCall = (ipcMain.on as unknown as jest.Mock).mock.calls.find(
+      (c: unknown[]) => c[0] === 'to:renderer:ready',
+    );
+    expect(readyCall).toBeDefined();
+    (readyCall![1] as (event: unknown) => void)({
+      sender: { id: winInstance.webContents.id },
+    });
+    expect(winInstance.maximize).toHaveBeenCalledTimes(1);
+    expect(winInstance.show).toHaveBeenCalledTimes(1);
   });
 
   it('subscribes to nativeTheme.on("updated") so live OS theme switches propagate without a relaunch', () => {

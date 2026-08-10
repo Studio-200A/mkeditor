@@ -1,7 +1,21 @@
 import type { EditorSettings, ExportSettings } from './interfaces/Editor';
-import { normalizeLanguage } from './i18n';
 
 export const config = {};
+
+const DEFAULT_EDITOR_FONT_FAMILY =
+  "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace";
+
+const DEFAULT_PREVIEW_TEXT_FONT_FAMILY =
+  "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif";
+
+const DEFAULT_PREVIEW_CODE_FONT_FAMILY =
+  "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace";
+
+export {
+  DEFAULT_EDITOR_FONT_FAMILY,
+  DEFAULT_PREVIEW_TEXT_FONT_FAMILY,
+  DEFAULT_PREVIEW_CODE_FONT_FAMILY,
+};
 
 export const settings: EditorSettings = {
   autoindent: false,
@@ -12,9 +26,19 @@ export const settings: EditorSettings = {
   systemtheme: true,
   scrollsync: true,
   sessionRestore: true,
-  locale: normalizeLanguage(navigator.language),
+  locale: 'system',
   fileExplorer: { extensions: ['md'] },
   pasteImages: { directory: './assets' },
+  editorFontFamily: DEFAULT_EDITOR_FONT_FAMILY,
+  previewTextFontFamily: DEFAULT_PREVIEW_TEXT_FONT_FAMILY,
+  previewCodeFontFamily: DEFAULT_PREVIEW_CODE_FONT_FAMILY,
+  editorFontSize: 14,
+  previewTextFontSize: 16,
+  previewCodeFontSize: 14,
+  lineNumbersMinChars: 5,
+  uiZoom: 100,
+  editorZoom: 100,
+  previewZoom: 100,
 };
 
 export const exportSettings: ExportSettings = {

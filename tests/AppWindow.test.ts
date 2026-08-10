@@ -8,6 +8,11 @@
 
 import { ipcMain } from 'electron';
 import { AppWindow } from '../src/app/lib/AppWindow';
+import { AppSession } from '../src/app/lib/AppSession';
+
+jest.mock('../src/app/lib/AppSession', () => ({
+  AppSession: { saveWindowState: jest.fn() },
+}));
 
 type Listener = (...args: unknown[]) => void;
 
@@ -20,6 +25,7 @@ interface MockWindow {
   isMaximized: jest.Mock<boolean, []>;
   isFullScreen: jest.Mock<boolean, []>;
   isDestroyed: jest.Mock<boolean, []>;
+  getNormalBounds: jest.Mock;
   on: jest.Mock;
   once: jest.Mock;
   webContents: {
@@ -49,6 +55,12 @@ function makeMockWindow(senderId: number = FAKE_SENDER_ID): MockWindow {
     isMaximized: jest.fn<boolean, []>(() => false),
     isFullScreen: jest.fn<boolean, []>(() => false),
     isDestroyed: jest.fn<boolean, []>(() => false),
+    getNormalBounds: jest.fn(() => ({
+      x: 10,
+      y: 20,
+      width: 800,
+      height: 600,
+    })),
     on: jest.fn((event: string, handler: Listener) => {
       const arr = eventHandlers.get(event) ?? [];
       arr.push(handler);
@@ -97,6 +109,7 @@ function getIpcHandler(channel: string): Listener {
 
 beforeEach(() => {
   (ipcMain.on as jest.Mock).mockClear();
+  jest.clearAllMocks();
 });
 
 describe('AppWindow', () => {
@@ -182,6 +195,18 @@ describe('AppWindow', () => {
     win.fireEvent('unmaximize');
     expect(win.webContents.send).toHaveBeenCalledWith('from:window:state', {
       isMaximized: false,
+    });
+  });
+
+  it('persists normal bounds and maximized state on close', () => {
+    const win = makeMockWindow();
+    new AppWindow(win as never, true);
+    win.fireEvent('close');
+    expect(AppSession.saveWindowState).toHaveBeenCalledWith(false, {
+      x: 10,
+      y: 20,
+      width: 800,
+      height: 600,
     });
   });
 

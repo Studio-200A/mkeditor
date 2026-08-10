@@ -2,7 +2,9 @@
   "app": {
     "document_title": "MKEditor",
     "app_name": "mkeditor",
-    "brand_name": "MKEditor"
+    "brand_name": "MKEditor",
+    "no_open_tabs": "No open tabs",
+    "new_file": "New File"
   },
   "assistant-chat": {
     "new_conversation": "New chat",
@@ -213,7 +215,8 @@
     "libraries_intro": "MKEditor uses the following open-source libraries:",
     "libraries_list": "monaco, react, tailwind, markdown-it, highlight.js, webpack and electron.",
     "view_source_prefix": "View the source code",
-    "view_source_here": "here"
+    "view_source_here": "here",
+    "modified_by": "Modified by Shawn @"
   },
   "modals-export": {
     "title": "Export settings",
@@ -287,12 +290,33 @@
     "systemtheme_help": "Let your system theme override your stored settings.",
     "language_label": "Language",
     "language_help": "Select the interface language.",
+    "language_system": "Follow system",
     "save_settings": "Save Settings",
     "tab_general": "General Settings",
     "tab_assistant": "AI Providers",
     "paste_images": "Pasted images",
     "paste_images_directory_label": "Pasted-image directory",
-    "paste_images_directory_help": "Relative paths (e.g. './assets') resolve against the active markdown file's folder. Absolute paths must sit inside the open workspace."
+    "paste_images_directory_help": "Relative paths (e.g. './assets') resolve against the active markdown file's folder. Absolute paths must sit inside the open workspace.",
+    "fonts": "Fonts",
+    "editor_font_section": "Editor",
+    "editor_font_label": "Editor font",
+    "editor_font_help": "CSS font-family list used by the Monaco Markdown editor.",
+    "preview_font_section": "Preview",
+    "preview_text_font_label": "Text font",
+    "preview_text_font_help": "CSS font-family list used for rendered Markdown prose.",
+    "preview_code_font_label": "Code font",
+    "preview_code_font_help": "CSS font-family list used for rendered Markdown code.",
+    "ui_zoom_label": "UI Zoom",
+    "ui_zoom_help": "Scale the application interface. Desktop only.",
+    "editor_zoom_label": "Editor Zoom",
+    "editor_zoom_help": "Scale Markdown source text in the editor.",
+    "preview_zoom_label": "Preview Zoom",
+    "preview_zoom_help": "Scale the live preview without changing export size.",
+    "editor_font_size_label": "Size",
+    "preview_text_font_size_label": "Size",
+    "preview_code_font_size_label": "Size",
+    "line_numbers_min_chars_label": "Line number width",
+    "line_numbers_min_chars_help": "Minimum characters reserved for line numbers in the editor gutter."
   },
   "modals-shortcuts": {
     "title": "MKEditor Shortcuts",
@@ -364,7 +388,8 @@
     "active_file_default": "MKEditor",
     "copy_path_tooltip": "Copy path to clipboard",
     "path_copied": "Path copied to clipboard",
-    "code_copied": "Code copied to clipboard"
+    "code_copied": "Code copied to clipboard",
+    "version_tooltip": "About MKEditor"
   },
   "notifications": {
     "unable_export_preview": "Unable to export preview",

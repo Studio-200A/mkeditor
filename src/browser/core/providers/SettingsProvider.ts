@@ -4,7 +4,12 @@ import type {
   EditorSettingsSnapshot,
   SettingsFile,
 } from '../../interfaces/Editor';
-import { settings } from '../../config';
+import {
+  settings,
+  DEFAULT_EDITOR_FONT_FAMILY,
+  DEFAULT_PREVIEW_TEXT_FONT_FAMILY,
+  DEFAULT_PREVIEW_CODE_FONT_FAMILY,
+} from '../../config';
 
 type PersistHandler = (next: Partial<SettingsFile>) => void;
 
@@ -156,7 +161,31 @@ export class SettingsProvider {
       whitespace: () => this.setWhitespace(),
       systemtheme: () => this.setTheme(),
       // scrollsync has no editor option — checked at scroll time.
-      locale: () => window.setLanguage(this.currentSettings.locale),
+      locale: () => {
+        const resolved =
+          this.currentSettings.locale === 'system'
+            ? window.mked
+              ? (window.mked.getAppLocale?.() ?? 'en')
+              : navigator.language
+            : this.currentSettings.locale;
+        window.setLanguage(resolved);
+      },
+      editorFontFamily: () => this.setEditorFont(),
+      previewTextFontFamily: () => this.applyPreviewFonts(),
+      previewCodeFontFamily: () => this.applyPreviewFonts(),
+      editorZoom: () => this.setEditorZoom(),
+      previewZoom: () => this.applyPreviewZoom(),
+      // UI Zoom is applied in the main process via setZoomFactor(),
+      // but the global factor compounds with editor/preview zoom.
+      // Counter-compensate so each zoom control acts independently.
+      uiZoom: () => {
+        this.setEditorZoom();
+        this.applyPreviewZoom();
+      },
+      editorFontSize: () => this.setEditorZoom(),
+      previewTextFontSize: () => this.applyPreviewFontSizes(),
+      previewCodeFontSize: () => this.applyPreviewFontSizes(),
+      lineNumbersMinChars: () => this.setLineNumbersMinChars(),
     };
     handlers[key]?.();
   }
@@ -168,7 +197,13 @@ export class SettingsProvider {
       .setMinimap()
       .setWhitespace()
       .setWordWrap()
-      .setSystemThemeOverride();
+      .setSystemThemeOverride()
+      .setEditorFont()
+      .setEditorZoom()
+      .applyPreviewFonts()
+      .applyPreviewZoom()
+      .applyPreviewFontSizes()
+      .setLineNumbersMinChars();
   }
 
   // ---------------------------------------------------------------------
@@ -318,6 +353,90 @@ export class SettingsProvider {
     // `systemtheme` from SettingsContext and disables the darkmode
     // toggle conditionally. Kept as a no-op method so the public
     // surface listed in the migration doc still resolves.
+    return this;
+  }
+
+  // ---------------------------------------------------------------------
+  // Font applicators
+  // ---------------------------------------------------------------------
+
+  public setEditorFont() {
+    const value = this.currentSettings.editorFontFamily?.trim();
+    const family = value || DEFAULT_EDITOR_FONT_FAMILY;
+    this.mkeditor.updateOptions({ fontFamily: family });
+    return this;
+  }
+
+  public applyPreviewFonts() {
+    const layer = document.querySelector(
+      '.preview-zoom-layer',
+    ) as HTMLElement | null;
+    if (!layer) return this;
+    const textFont =
+      this.currentSettings.previewTextFontFamily?.trim() ||
+      DEFAULT_PREVIEW_TEXT_FONT_FAMILY;
+    const codeFont =
+      this.currentSettings.previewCodeFontFamily?.trim() ||
+      DEFAULT_PREVIEW_CODE_FONT_FAMILY;
+    layer.style.setProperty('--mk-preview-text-font-family', textFont);
+    layer.style.setProperty('--mk-preview-code-font-family', codeFont);
+    return this;
+  }
+
+  public applyPreviewFontSizes() {
+    const layer = document.querySelector(
+      '.preview-zoom-layer',
+    ) as HTMLElement | null;
+    if (!layer) return this;
+    const textSize = this.currentSettings.previewTextFontSize ?? 16;
+    const codeSize = this.currentSettings.previewCodeFontSize ?? 14;
+    layer.style.setProperty('--mk-preview-text-font-size', `${textSize}px`);
+    layer.style.setProperty('--mk-preview-code-font-size', `${codeSize}px`);
+    return this;
+  }
+
+  public setLineNumbersMinChars() {
+    const chars = this.currentSettings.lineNumbersMinChars ?? 5;
+    this.mkeditor.updateOptions({
+      lineNumbersMinChars: chars,
+      lineDecorationsWidth: 0,
+    });
+    return this;
+  }
+
+  // ---------------------------------------------------------------------
+  // Zoom applicators
+  // ---------------------------------------------------------------------
+
+  private static readonly ALLOWED_ZOOM_VALUES = new Set([
+    75, 80, 90, 100, 110, 125, 150, 175, 200,
+  ]);
+
+  /** Sanitize a zoom value from settings.json; falls back to 100 on invalid input. */
+  private sanitizeZoom(raw: unknown): number {
+    if (typeof raw !== 'number' || !Number.isFinite(raw)) return 100;
+    if (!SettingsProvider.ALLOWED_ZOOM_VALUES.has(raw)) return 100;
+    return raw;
+  }
+
+  public setEditorZoom() {
+    const baseSize = this.currentSettings.editorFontSize ?? 14;
+    const editorZoom = this.sanitizeZoom(this.currentSettings.editorZoom);
+    const uiZoom = this.sanitizeZoom(this.currentSettings.uiZoom);
+    const fontSize = baseSize * (editorZoom / uiZoom);
+    this.mkeditor.updateOptions({ fontSize });
+    return this;
+  }
+
+  public applyPreviewZoom() {
+    const layer = document.querySelector(
+      '.preview-zoom-layer',
+    ) as HTMLElement | null;
+    if (!layer) return this;
+    const previewZoom = this.sanitizeZoom(this.currentSettings.previewZoom);
+    const uiZoom = this.sanitizeZoom(this.currentSettings.uiZoom);
+    (layer.style as CSSStyleDeclaration & { zoom?: string }).zoom =
+      `${previewZoom / uiZoom}`;
     return this;
   }
 }

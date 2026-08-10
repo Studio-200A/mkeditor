@@ -1,5 +1,39 @@
 # CHANGELOG
 
+### 2026-08-10 — v4.2.0-custom (shawn/custom fork)
+
+#### Added
+
+- **Custom font settings**: Three font-family text inputs (Editor, Preview text, Preview code) and matching font-size number inputs in Settings → General → Fonts. Editor font family applied via Monaco `updateOptions({ fontFamily })`; preview fonts use CSS custom properties set on a `.preview-zoom-layer` wrapper that sits between `#preview` and `#preview-content`, so exports are never polluted.
+- **Zoom controls**: Three independent zoom dropdowns (UI Zoom, Editor Zoom, Preview Zoom) in Settings → General → Appearance. UI Zoom uses `webContents.setZoomFactor()`; editor and preview areas counter-compensate the global Electron factor so each zoom control acts independently. Allowed values: 75–200%;
+- **Line number width**: Dropdown (1–10 chars) in Settings → General → Editing. Controls Monaco's `lineNumbersMinChars` with `lineDecorationsWidth: 0` for a clean gutter.
+- **Portable Linux build**: `scripts/build-portable-linux.mjs` produces an unpacked Electron app (`--linux dir`) deployed to `~/.local/opt/MKEditor/mkeditor-<version>-custom/` with a `current` symlink. No `sudo`, no system directories, no shell config modifications. The build script emits a wrapper-script template that permanently disables auto-update.
+- **Auto-updater guard**: `MKEDITOR_DISABLE_UPDATER=1` environment variable disables all `electron-updater` activity — no update checks, no download prompts. The portable build script advises this variable on every launch.
+- **Session persistence for sidebar and window state**: Session v3 saves left file-tree sidebar visibility (`sidebarOpen`), maximized state (`isMaximized`), and normal window bounds (`x`, `y`, `width`, `height`) together in `~/.mkeditor/session.json`. Bounds are refreshed on resize, move, maximize/restore, and close; renderer session flushes merge the current main-process window state instead of overwriting it.
+- **Empty-state overlay**: When no tabs are open, the editor shows a "No open tabs" / "New File" overlay instead of auto-creating an Untitled tab. Users must explicitly create a new file.
+- **Version bump**: `4.2.0-custom`.
+- **UI layout reorganized**: Toolbar (formatting/export buttons + sidebar toggle) now sits below the menu bar; status bar (file path, character/word counts, settings, shortcuts, AI toggle, dark mode, version) at the bottom. Cleaner editor-layout convention.
+- **About page credit**: "Modified by Shawn @ Studio 200A" with GitHub link added below the original author credit.
+
+#### Changed
+
+- **Preview font-size cascade**: `syncPreviewToExportSettings()` now writes `--mk-export-font-size` as a CSS custom property instead of an inline `font-size` style, allowing the live-preview-only `--mk-preview-text-font-size` (set on `.preview-zoom-layer`) to take precedence in the live preview while keeping exports governed solely by ExportSettings.
+- **"Follow system" language option**: The language selector now defaults to "Follow system" instead of baking in the OS language at init time. When selected, the app resolves the OS/browser language dynamically on every launch. `AppBridge.mked:get-locale` resolves `'system'` to the actual OS locale.
+- **Renderer-ready startup handshake**: The desktop window remains hidden until React has applied the persisted theme, settings, and session layout, eliminating the default light-theme/open-sidebar flash at launch. Maximization is deferred until the same reveal step because Electron's `maximize()` otherwise shows a hidden window early; a two-second timeout prevents renderer failures from leaving the app invisible.
+- **Open-folder sidebar reveal**: After a user-selected folder loads successfully, the file-tree sidebar opens automatically and persists that state so the result is immediately visible. Automatic workspace restore still respects the sidebar state saved in the prior session.
+
+#### Fixed
+
+- **Untitled tab close counter**: Closing the last tab no longer advances the untitled counter (`untitled-1` closes → `untitled-1` reopens, not `untitled-2`). The counter only advances on user-initiated File → New.
+- **Settings modal overflow**: Content now constrained to `max-h-[calc(100vh-10rem)]` with `overflow-y-auto` so the expanded Fonts + Zoom sections are reachable.
+- **Welcome text on relaunch**: When session restore is disabled, the fallback now seeds an empty untitled buffer rather than the welcome guide — the welcome text only appears on genuine first launches.
+- **AppSettings stale migration state**: `this.applied` is no longer overwritten with unmigrated data after a `deepMerge` upgrade of old settings.json.
+- **Preview `kbd` font**: Added missing `font-family: var(--mk-preview-code-font-family, ...)` to `<kbd>` elements.
+- **Window state on relaunch**: Window bounds and maximized state now restore from the unified session file without renderer flushes dropping geometry or treating `isMaximized: false` as maximized. Window size restores on all supported desktops; absolute position also restores where the window system permits it (native Wayland compositors intentionally control top-level placement).
+- **Ghost-style toolbar buttons; splash screen removed; bottom padding (old fixed toolbar leftover) removed.**
+
+---
+
 ### 2026-05-21 - v4.1.0
 
 #### Added
