@@ -1,36 +1,45 @@
 # CHANGELOG
 
-### 2026-08-10 — v4.2.0-custom (shawn/custom fork)
+### 2026-08-11 — v4.2.0-custom (shawn/custom fork)
 
 #### Added
 
-- **Custom font settings**: Three font-family text inputs (Editor, Preview text, Preview code) and matching font-size number inputs in Settings → General → Fonts. Editor font family applied via Monaco `updateOptions({ fontFamily })`; preview fonts use CSS custom properties set on a `.preview-zoom-layer` wrapper that sits between `#preview` and `#preview-content`, so exports are never polluted.
-- **Zoom controls**: Three independent zoom dropdowns (UI Zoom, Editor Zoom, Preview Zoom) in Settings → General → Appearance. UI Zoom uses `webContents.setZoomFactor()`; editor and preview areas counter-compensate the global Electron factor so each zoom control acts independently. Allowed values: 75–200%;
-- **Line number width**: Dropdown (1–10 chars) in Settings → General → Editing. Controls Monaco's `lineNumbersMinChars` with `lineDecorationsWidth: 0` for a clean gutter.
-- **Portable Linux build**: `scripts/build-portable-linux.mjs` produces an unpacked Electron app (`--linux dir`) deployed to `~/.local/opt/MKEditor/mkeditor-<version>-custom/` with a `current` symlink. No `sudo`, no system directories, no shell config modifications. The build script emits a wrapper-script template that permanently disables auto-update.
-- **Auto-updater guard**: `MKEDITOR_DISABLE_UPDATER=1` environment variable disables all `electron-updater` activity — no update checks, no download prompts. The portable build script advises this variable on every launch.
-- **Session persistence for sidebar and window state**: Session v3 saves left file-tree sidebar visibility (`sidebarOpen`), maximized state (`isMaximized`), and normal window bounds (`x`, `y`, `width`, `height`) together in `~/.mkeditor/session.json`. Bounds are refreshed on resize, move, maximize/restore, and close; renderer session flushes merge the current main-process window state instead of overwriting it.
-- **Empty-state overlay**: When no tabs are open, the editor shows a "No open tabs" / "New File" overlay instead of auto-creating an Untitled tab. Users must explicitly create a new file.
-- **Version bump**: `4.2.0-custom`.
-- **UI layout reorganized**: Toolbar (formatting/export buttons + sidebar toggle) now sits below the menu bar; status bar (file path, character/word counts, settings, shortcuts, AI toggle, dark mode, version) at the bottom. Cleaner editor-layout convention.
-- **About page credit**: "Modified by Shawn @ Studio 200A" with GitHub link added below the original author credit.
+- **Fork identity and packaging**: The application version is `4.2.0-custom`, About credits “Shawn @ Studio 200A”, and `scripts/build-portable-linux.mjs` builds an unpacked Linux app, deploys it to `~/.local/opt/MKEditor/mkeditor-<package-version>/`, updates the `current` symlink, and prints an optional wrapper template without requiring `sudo` or changing shell configuration.
+- **Typography settings**: Settings → General → Appearance controls the UI font; Settings → Editor → Fonts controls editor, preview-text, and preview-code families and sizes. Monaco options and live-preview CSS variables apply changes without leaking live-preview typography into exported documents.
+- **Independent zoom controls**: General → Zoom provides 75–200% UI, editor, and preview zoom. Desktop UI zoom uses Electron's zoom factor while editor and preview counter-compensate so all three controls remain independent.
+- **Editor gutter and minimap controls**: Editor → Editing provides a persisted 3–10 character minimum line-number width and an approximate 20–300 px minimap width. Monaco scale/column mapping extends the useful minimap range, and the width input supports multi-digit draft values before final clamping.
+- **Scrollbar visibility**: General → Scrollbars controls Monaco and preview scrollbars with Always visible, Auto hide after 1000 ms, and Always hidden modes. Hidden Monaco bars release their layout space; auto-hide retains stable geometry to avoid content reflow.
+- **Monokai Pro theming**: Dark mode uses the registered `mkeditor-monokai-pro` Monaco theme plus semantic application, Markdown, alert, table, code, scrollbar, and status colors. Shared light/dark Markdown roles and six heading colors also improve the light preview/export theme.
+- **GFM extensions and GitHub Alerts**: Preview, styled export, and AI Assistant Markdown support task lists, extended `www.`/email autolinks, disallowed raw-tag filtering, and `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, and `CAUTION` alerts with self-contained SVG icons. Monaco highlights task markers, strikethrough, and autolinks; existing Markdown-it table/strikethrough behavior remains enabled.
+- **Layout menu**: View → Layout provides synchronized renderer/native checkbox controls for toolbar, tab bar, Explorer, editor, preview, status bar, and AI Assistant visibility plus Reset Layout. Editor and preview collapse without unmounting, preserve their split, cannot both be hidden, and reset to 50/50.
+- **Session v4**: `~/.mkeditor/session.json` persists tabs, workspace, Monaco view states, assistant size, seven-region layout visibility, normal bounds, and maximized state. Readers accept v1–v4; writers use atomic replacement and stamp v4.
+- **Zero-tab workspace**: Startup and closing the final tab now show a “No open tabs” overlay with an explicit New File action instead of automatically creating or exposing a welcome/Untitled buffer.
+- **Status-bar actions**: The bottom status bar includes file/count information, settings, shortcuts, AI, theme, and a clickable version that opens About.
 
 #### Changed
 
-- **Preview font-size cascade**: `syncPreviewToExportSettings()` now writes `--mk-export-font-size` as a CSS custom property instead of an inline `font-size` style, allowing the live-preview-only `--mk-preview-text-font-size` (set on `.preview-zoom-layer`) to take precedence in the live preview while keeping exports governed solely by ExportSettings.
-- **"Follow system" language option**: The language selector now defaults to "Follow system" instead of baking in the OS language at init time. When selected, the app resolves the OS/browser language dynamically on every launch. `AppBridge.mked:get-locale` resolves `'system'` to the actual OS locale.
-- **Renderer-ready startup handshake**: The desktop window remains hidden until React has applied the persisted theme, settings, and session layout, eliminating the default light-theme/open-sidebar flash at launch. Maximization is deferred until the same reveal step because Electron's `maximize()` otherwise shows a hidden window early; a two-second timeout prevents renderer failures from leaving the app invisible.
-- **Open-folder sidebar reveal**: After a user-selected folder loads successfully, the file-tree sidebar opens automatically and persists that state so the result is immediately visible. Automatic workspace restore still respects the sidebar state saved in the prior session.
+- **Settings architecture**: The long-form modal is now a near-full-window VS Code-style shell with fixed header/footer, two-level desktop navigation, a compact narrow-screen selector, and an independently scrolling content pane. Pages are grouped under General, Editor, and desktop-only AI Providers; Assistant entry points preserve deep links.
+- **Application chrome**: Formatting/export controls live below the title/menu bar and status controls live at the bottom. Toolbar buttons use ghost styling; the obsolete splash screen, static portal hosts, and fixed-toolbar body padding were removed.
+- **Window startup**: Desktop windows remain hidden until theme, settings, and session layout are applied, with a two-second safety timeout. Fresh launches start windowed; only a persisted `isMaximized: true` maximizes after renderer readiness.
+- **Session semantics**: Disabling “Restore session on launch” still saves layout/window state but omits tab, workspace, and cursor data. “Clear saved session” keeps current tabs open while guaranteeing the next launch starts without restored tabs, even after quit-time state flushes.
+- **System language behavior**: Locale defaults to Follow system and resolves the current OS/browser language on every launch. Switching an explicit locale back to system uses a dedicated OS-locale IPC path rather than the previously persisted app locale.
+- **Preview/export styling**: Preview font size uses a live-only variable while export font size remains export-owned. Styled exports embed the shared highlight.js rules and no longer fetch a separate GitHub highlighting stylesheet.
+- **Sidebar and file opening behavior**: A user-opened folder reveals and persists the Explorer sidebar; automatic workspace restore respects saved visibility. Startup accepts a Markdown path from any CLI argument, and macOS Finder `open-file` uses Electron's supplied path.
+- **Updater policy**: Custom builds disable the upstream auto-updater by default so official releases cannot overwrite the fork. `MKEDITOR_ENABLE_UPDATER=1` opts in; `MKEDITOR_DISABLE_UPDATER=1` explicitly disables updates on any build.
+- **Dependencies/tooling**: Added direct `markdown-it-task-lists` and `linkify-it` dependencies plus local vendor declarations for the task-list plugin and Monaco Markdown tokenizer internals. Generated combined locale bundles remain the runtime fast path.
 
 #### Fixed
 
-- **Untitled tab close counter**: Closing the last tab no longer advances the untitled counter (`untitled-1` closes → `untitled-1` reopens, not `untitled-2`). The counter only advances on user-initiated File → New.
-- **Settings modal overflow**: Content now constrained to `max-h-[calc(100vh-10rem)]` with `overflow-y-auto` so the expanded Fonts + Zoom sections are reachable.
-- **Welcome text on relaunch**: When session restore is disabled, the fallback now seeds an empty untitled buffer rather than the welcome guide — the welcome text only appears on genuine first launches.
-- **AppSettings stale migration state**: `this.applied` is no longer overwritten with unmigrated data after a `deepMerge` upgrade of old settings.json.
-- **Preview `kbd` font**: Added missing `font-family: var(--mk-preview-code-font-family, ...)` to `<kbd>` elements.
-- **Window state on relaunch**: Window bounds and maximized state now restore from the unified session file without renderer flushes dropping geometry or treating `isMaximized: false` as maximized. Window size restores on all supported desktops; absolute position also restores where the window system permits it (native Wayland compositors intentionally control top-level placement).
-- **Ghost-style toolbar buttons; splash screen removed; bottom padding (old fixed toolbar leftover) removed.**
+- **Final-tab cleanup**: Discarding the final dirty tab detaches Monaco's model, clears preview content, resets renderer/main dirty state, and prevents a duplicate unsaved-changes prompt on exit. Closing the final tab no longer advances the Untitled counter.
+- **Settings validation and startup replay**: Legacy line-number widths 1/2 migrate to 3; font sizes are clamped to 9–72; preview font families, sizes, and zoom are reapplied after the preview DOM mounts; AppSettings retains the normalized deep-merge result.
+- **Window/session reliability**: Renderer session writes preserve main-owned geometry and false maximized state. Window size restores on supported desktops; absolute position restores where the compositor permits it (Wayland may control placement).
+- **Menus and fullscreen**: Custom Windows/Linux dropdowns share controlled open state, switch on hover, and use clear highlighted states. Reset Layout aligns with checkbox labels. F11 true fullscreen hides the custom title bar and restores it on exit, while maximized windows keep it visible.
+- **Preview/editor details**: Minimap draft entry no longer clamps prematurely; Always hidden scrollbars release Monaco's scrollbar/overview-ruler width; preview `<kbd>` and fenced code honor preview code typography.
+
+#### Maintenance
+
+- Removed unreachable splash, legacy bottom-toolbar, unused Radix Tabs wrapper, unused notification hook, unused Claude logo, splash animations, and the now-unused `@radix-ui/react-tabs` dependency.
+- Removed completed project-specific Claude workflow files and updated surviving architecture/migration documentation so it no longer links to deleted automation.
 
 ---
 

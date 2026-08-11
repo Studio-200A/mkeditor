@@ -38,14 +38,52 @@ export const markdownStylesheet = `
   --md-muted-bg: #f6f8fa;
   --md-code-bg: rgba(175, 184, 193, 0.2);
   --md-link: #0969da;
+  --md-alert-note: #0969da;
+  --md-alert-tip: #1a7f37;
+  --md-alert-important: #8250df;
+  --md-alert-warning: #9a6700;
+  --md-alert-caution: #cf222e;
+  --md-h1: #d40045;
+  --md-h2: #ff7f00;
+  --md-h3: #66b82b;
+  --md-h4: #093f86;
+  --md-h5: #340c81;
+  --md-h6: #373530;
+  --hljs-foreground: #24292f;
+  --hljs-comment: #6e7781;
+  --hljs-red: #cf222e;
+  --hljs-purple: #8250df;
+  --hljs-blue: #0550ae;
+  --hljs-green: #116329;
+  --hljs-orange: #953800;
+  --hljs-cyan: #0a3069;
 }
 
 [data-theme='dark'] {
-  --md-border: #30363d;
-  --md-muted-fg: #9198a1;
-  --md-muted-bg: #161b22;
-  --md-code-bg: rgba(110, 118, 129, 0.4);
-  --md-link: #2f81f7;
+  --md-border: #5b595c;
+  --md-muted-fg: #b8b6b8;
+  --md-muted-bg: #403e41;
+  --md-code-bg: rgba(91, 89, 92, 0.45);
+  --md-link: #78dce8;
+  --md-alert-note: #4493f8;
+  --md-alert-tip: #3fb950;
+  --md-alert-important: #ab7df8;
+  --md-alert-warning: #d29922;
+  --md-alert-caution: #f85149;
+  --md-h1: #ff6188;
+  --md-h2: #ffd866;
+  --md-h3: #a9dc76;
+  --md-h4: #78dce8;
+  --md-h5: #ab9df2;
+  --md-h6: #fc9867;
+  --hljs-foreground: #fcfcfa;
+  --hljs-comment: #727072;
+  --hljs-red: #ff6188;
+  --hljs-purple: #ab9df2;
+  --hljs-blue: #78dce8;
+  --hljs-green: #a9dc76;
+  --hljs-orange: #fc9867;
+  --hljs-cyan: #78dce8;
 }
 
 /* ===== Base ===== */
@@ -107,12 +145,12 @@ export const markdownStylesheet = `
   border-bottom: 1px solid var(--md-border);
 }
 
-#preview-content h1 { font-size: 2em;     }
-#preview-content h2 { font-size: 1.5em;   }
-#preview-content h3 { font-size: 1.25em;  }
-#preview-content h4 { font-size: 1em;     }
-#preview-content h5 { font-size: 0.875em; }
-#preview-content h6 { font-size: 0.85em; color: var(--md-muted-fg); }
+#preview-content h1 { font-size: 2em; color: var(--md-h1); }
+#preview-content h2 { font-size: 1.5em; color: var(--md-h2); }
+#preview-content h3 { font-size: 1.25em; color: var(--md-h3); }
+#preview-content h4 { font-size: 1em; color: var(--md-h4); }
+#preview-content h5 { font-size: 0.875em; color: var(--md-h5); }
+#preview-content h6 { font-size: 0.85em; color: var(--md-h6); }
 
 /* ===== Lists =====
  * Tailwind's base layer resets list-style on ul/ol, so we re-assert the
@@ -161,6 +199,39 @@ export const markdownStylesheet = `
 #preview-content blockquote > :first-child { margin-top: 0; }
 #preview-content blockquote > :last-child  { margin-bottom: 0; }
 
+/* ===== GitHub alerts ===== */
+
+#preview-content blockquote.markdown-alert {
+  color: inherit;
+  border-left-color: var(--md-alert-color);
+}
+
+#preview-content .markdown-alert-note { --md-alert-color: var(--md-alert-note); }
+#preview-content .markdown-alert-tip { --md-alert-color: var(--md-alert-tip); }
+#preview-content .markdown-alert-important { --md-alert-color: var(--md-alert-important); }
+#preview-content .markdown-alert-warning { --md-alert-color: var(--md-alert-warning); }
+#preview-content .markdown-alert-caution { --md-alert-color: var(--md-alert-caution); }
+
+#preview-content .markdown-alert-title {
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+  margin: 0 0 0.5em;
+  color: var(--md-alert-color);
+  font-weight: 600;
+}
+
+#preview-content .markdown-alert-icon {
+  width: 1em;
+  height: 1em;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
+
 /* ===== Code ===== */
 
 #preview-content code,
@@ -186,7 +257,7 @@ export const markdownStylesheet = `
 #preview-content pre {
   padding: 16px;
   overflow: auto;
-  font-size: 85%;
+  font-size: var(--mk-preview-code-font-size, 12px);
   line-height: 1.45;
   background: var(--md-muted-bg);
   border-radius: 6px;
@@ -201,6 +272,53 @@ export const markdownStylesheet = `
   border: 0;
   font-size: 100%;
 }
+
+/* highlight.js token roles. Markdown.ts emits .hljs-* classes, while the
+ * supplied Monokai reference targets Prism's incompatible .token-* names.
+ * Keeping this mapping in the shared stylesheet themes live preview,
+ * assistant markdown, and styled HTML exports from one source. */
+.hljs { color: var(--hljs-foreground); background: transparent; }
+.hljs-comment,
+.hljs-code,
+.hljs-formula { color: var(--hljs-comment); font-style: italic; }
+.hljs-doctag,
+.hljs-keyword,
+.hljs-template-tag,
+.hljs-type,
+.hljs-tag { color: var(--hljs-red); }
+.hljs-literal,
+.hljs-number,
+.hljs-constant { color: var(--hljs-purple); }
+.hljs-attr,
+.hljs-attribute,
+.hljs-link,
+.hljs-operator,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation { color: var(--hljs-blue); }
+.hljs-addition,
+.hljs-name,
+.hljs-quote,
+.hljs-regexp,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id,
+.hljs-selector-pseudo,
+.hljs-selector-tag,
+.hljs-string { color: var(--hljs-green); }
+.hljs-built_in,
+.hljs-bullet,
+.hljs-meta,
+.hljs-symbol,
+.hljs-variable { color: var(--hljs-orange); }
+.hljs-class .hljs-title,
+.hljs-function .hljs-title,
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.function_ { color: var(--md-h2); }
+.hljs-deletion { color: var(--hljs-red); }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 700; }
 
 /* ===== Fenced code block wrapper =====
  * The Markdown.ts renderer wraps every fenced block (and indented block
@@ -285,26 +403,26 @@ export const markdownStylesheet = `
 /* Terminal-style variant: dark macOS-style chrome with traffic lights. */
 
 #preview-content .md-codeblock--terminal {
-  background: #1f1f23;
-  border-color: #0f0f12;
-  color: #e6e6e6;
+  background: #2d2a2e;
+  border-color: #221f22;
+  color: #fcfcfa;
 }
 
 #preview-content .md-codeblock--terminal .md-codeblock-header {
-  background: #2b2b30;
-  color: #b8b8c0;
-  border-bottom-color: #0f0f12;
+  background: #403e41;
+  color: #b8b6b8;
+  border-bottom-color: #221f22;
 }
 
 #preview-content .md-codeblock--terminal .md-codeblock-copy:hover {
   background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+  color: #fcfcfa;
 }
 
 #preview-content .md-codeblock--terminal > pre,
 #preview-content .md-codeblock--terminal > pre > code {
   background: transparent;
-  color: #e6e6e6;
+  color: #fcfcfa;
 }
 
 #preview-content .md-codeblock-dots {
@@ -494,20 +612,30 @@ export const markdownStylesheet = `
 #preview-content .alert-dark::before { content: 'Important'; color: #1f2328; }
 #preview-content .alert-dark a.alert-link { color: #1f2328; }
 
-/* Dark-mode background lifts for the alerts. Borders + label colours
- * are kept the same; the slightly higher alpha keeps the soft fill
- * visible against the dark editor background. */
-
-[data-theme='dark'] #preview-content .alert-info      { background: rgba(47, 129, 247, 0.12); }
-[data-theme='dark'] #preview-content .alert-success   { background: rgba(56, 139, 60, 0.15);  }
-[data-theme='dark'] #preview-content .alert-warning   { background: rgba(187, 128, 9, 0.15);  }
-[data-theme='dark'] #preview-content .alert-danger    { background: rgba(248, 81, 73, 0.15);  }
-[data-theme='dark'] #preview-content .alert-primary   { background: rgba(81, 144, 136, 0.20); }
-[data-theme='dark'] #preview-content .alert-secondary { background: rgba(110, 118, 129, 0.20); }
-[data-theme='dark'] #preview-content .alert-light     { background: rgba(110, 118, 129, 0.10); border-color: #30363d; }
-[data-theme='dark'] #preview-content .alert-dark      { background: rgba(230, 237, 243, 0.10); border-color: #e6edf3; }
-[data-theme='dark'] #preview-content .alert-dark::before    { color: #e6edf3; }
-[data-theme='dark'] #preview-content .alert-dark a.alert-link { color: #e6edf3; }
+/* Monokai Pro alert roles in dark mode. */
+[data-theme='dark'] #preview-content .alert-info { background: rgba(120, 220, 232, 0.12); border-color: #78dce8; }
+[data-theme='dark'] #preview-content .alert-info::before,
+[data-theme='dark'] #preview-content .alert-info a.alert-link { color: #78dce8; }
+[data-theme='dark'] #preview-content .alert-success { background: rgba(169, 220, 118, 0.12); border-color: #a9dc76; }
+[data-theme='dark'] #preview-content .alert-success::before,
+[data-theme='dark'] #preview-content .alert-success a.alert-link { color: #a9dc76; }
+[data-theme='dark'] #preview-content .alert-warning { background: rgba(255, 216, 102, 0.12); border-color: #ffd866; }
+[data-theme='dark'] #preview-content .alert-warning::before,
+[data-theme='dark'] #preview-content .alert-warning a.alert-link { color: #ffd866; }
+[data-theme='dark'] #preview-content .alert-danger { background: rgba(255, 97, 136, 0.12); border-color: #ff6188; }
+[data-theme='dark'] #preview-content .alert-danger::before,
+[data-theme='dark'] #preview-content .alert-danger a.alert-link { color: #ff6188; }
+[data-theme='dark'] #preview-content .alert-primary { background: rgba(171, 157, 242, 0.14); border-color: #ab9df2; }
+[data-theme='dark'] #preview-content .alert-primary::before,
+[data-theme='dark'] #preview-content .alert-primary a.alert-link { color: #ab9df2; }
+[data-theme='dark'] #preview-content .alert-secondary { background: rgba(252, 152, 103, 0.12); border-color: #fc9867; }
+[data-theme='dark'] #preview-content .alert-secondary::before,
+[data-theme='dark'] #preview-content .alert-secondary a.alert-link { color: #fc9867; }
+[data-theme='dark'] #preview-content .alert-light { background: rgba(184, 182, 184, 0.10); border-color: #b8b6b8; }
+[data-theme='dark'] #preview-content .alert-light::before { color: #b8b6b8; }
+[data-theme='dark'] #preview-content .alert-dark { background: rgba(252, 252, 250, 0.08); border-color: #fcfcfa; }
+[data-theme='dark'] #preview-content .alert-dark::before,
+[data-theme='dark'] #preview-content .alert-dark a.alert-link { color: #fcfcfa; }
 
 /* ===== Print ===== */
 

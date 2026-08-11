@@ -19,38 +19,61 @@
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
+  --warning: #9a6700;
+  --success: #1f883d;
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
+  --sidebar-background: #f3f3f3;
+  --scrollbar-track: #eeeeee;
+  --scrollbar-thumb: #bbbbbb;
+  --scrollbar-thumb-hover: #aaaaaa;
+  --gutter-background: #eeeeee;
+  --tabbar-background: #f3f3f3;
+  --tab-active-background: #ffffff;
+  --tab-accent: #519088;
+  --folder-icon: #9a6700;
+  --file-icon: #0969da;
+  --menu-highlight: oklch(0.922 0 0);
   --radius: 0.625rem;
 }
 
 [data-theme='dark'] {
-  /* Slightly lighter than Monaco's `vs-dark` (#1e1e1e) so the navbar
-     and bottom toolbar read as distinct chrome layers on top of the
-     editor pane. `--card` / `--popover` stay at 0.205 so modals
-     match the editor surface. */
-  --background: oklch(0.24 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  /* Brand teal stays the same in dark mode — keeps the MKEditor accent
-     consistent. Foreground stays light for contrast on the teal fill. */
-  --primary: oklch(0.578 0.0532 178.5);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  /* Monokai Pro semantic palette. Components consume roles rather than
+     palette literals so a future named-theme selector only replaces this
+     token block and the matching Monaco definition. */
+  --background: #2d2a2e;
+  --foreground: #fcfcfa;
+  --card: #363337;
+  --card-foreground: #fcfcfa;
+  --popover: #403e41;
+  --popover-foreground: #fcfcfa;
+  --primary: #ab9df2;
+  --primary-foreground: #2d2a2e;
+  --secondary: #403e41;
+  --secondary-foreground: #fcfcfa;
+  --muted: #403e41;
+  --muted-foreground: #b8b6b8;
+  --accent: #403e41;
+  --accent-foreground: #fcfcfa;
+  --destructive: #ff6188;
+  --destructive-foreground: #2d2a2e;
+  --warning: #ffd866;
+  --success: #a9dc76;
+  --border: #5b595c;
+  --input: #5b595c;
+  --ring: #ab9df2;
+  --sidebar-background: #221f22;
+  --scrollbar-track: #2d2a2e;
+  --scrollbar-thumb: #5b595c;
+  --scrollbar-thumb-hover: #727072;
+  --gutter-background: #403e41;
+  --tabbar-background: #221f22;
+  --tab-active-background: #363337;
+  --tab-accent: #ffd866;
+  --folder-icon: #ffd866;
+  --file-icon: #78dce8;
+  --menu-highlight: #5b595c;
 }
 
 @theme inline {
@@ -70,9 +93,17 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-warning: var(--warning);
+  --color-success: var(--success);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-tabbar: var(--tabbar-background);
+  --color-tab-active: var(--tab-active-background);
+  --color-tab-accent: var(--tab-accent);
+  --color-folder-icon: var(--folder-icon);
+  --color-file-icon: var(--file-icon);
+  --color-menu-highlight: var(--menu-highlight);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

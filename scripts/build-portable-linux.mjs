@@ -197,28 +197,22 @@ function exec(cmd, cwd = projectRoot) {
     const execBase = execName.split('/').pop();
     console.log('');
     console.log('  Run it with:');
-    console.log(
-      `    env MKEDITOR_DISABLE_UPDATER=1 ${currentLink}/${execBase}`,
-    );
+    console.log(`    ${currentLink}/${execBase}`);
     console.log('');
     console.log('  Or create a convenience wrapper script (recommended):');
     console.log(`    cat > ~/.local/bin/mkeditor << 'EOF'`);
     console.log(`    #!/bin/sh`);
-    console.log(
-      `    exec env MKEDITOR_DISABLE_UPDATER=1 ${currentLink}/${execBase} "$@"`,
-    );
+    console.log(`    exec ${currentLink}/${execBase} "$@"`);
     console.log(`    EOF`);
     console.log(`    chmod +x ~/.local/bin/mkeditor`);
     console.log('');
     console.log('  (Make sure ~/.local/bin is on your PATH)');
     console.log('');
+    console.log('  Custom builds disable upstream updates by default.');
     console.log(
-      '  MKEDITOR_DISABLE_UPDATER=1 prevents this portable build from',
+      '  Set MKEDITOR_ENABLE_UPDATER=1 only if you intentionally want',
     );
-    console.log(
-      '  checking for upstream releases — it will never try to download',
-    );
-    console.log('  or install an official MKEditor update.');
+    console.log('  this fork to follow official MKEditor releases.');
   }
   console.log(
     '================================================================================',

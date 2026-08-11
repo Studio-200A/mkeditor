@@ -20,6 +20,15 @@
   "edit.paste": "Pegar",
 
   "view.palette": "Abrir paleta de comandos",
+  "view.layout": "Diseño",
+  "view.layout.toolbar": "Mostrar barra de herramientas",
+  "view.layout.tabs": "Mostrar barra de pestañas",
+  "view.layout.sidebar": "Mostrar barra lateral del explorador",
+  "view.layout.editor": "Mostrar editor",
+  "view.layout.preview": "Mostrar vista previa",
+  "view.layout.statusbar": "Mostrar barra de estado",
+  "view.layout.assistant": "Mostrar barra lateral del asistente de IA",
+  "view.layout.reset": "Restablecer diseño",
   "view.fullscreen": "Alternar pantalla completa",
   "view.devtools": "Alternar herramientas para desarrolladores",
 

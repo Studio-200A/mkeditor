@@ -39,6 +39,7 @@ const senderWhitelist = [
   'to:window:close',
   'to:window:fullscreen',
   'to:command:run',
+  'to:layout:state',
   'to:edit:cut',
   'to:edit:copy',
   'to:edit:paste',
@@ -78,6 +79,8 @@ const receiverWhitelist = [
   'from:path:renamed',
   'from:i18n:set',
   'from:window:state',
+  'from:layout:set',
+  'from:layout:reset',
   // AI Assistant — streaming chunks / tool calls / done / error / config
   'from:ai:chunk',
   'from:ai:tool-call',
@@ -138,6 +141,7 @@ contextBridge.exposeInMainWorld('mked', {
   platform: process.platform,
   getActiveFilePath: () => ipcRenderer.sendSync('mked:get-active-file'),
   getAppLocale: () => ipcRenderer.sendSync('mked:get-locale'),
+  getSystemLocale: () => ipcRenderer.sendSync('mked:get-system-locale'),
   /**
    * SPKI base64 of main's per-session RSA-OAEP public key. The
    * renderer imports this via Web Crypto and uses it to encrypt

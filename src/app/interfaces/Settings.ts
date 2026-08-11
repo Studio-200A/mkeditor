@@ -6,18 +6,23 @@ export interface PasteImagesSettings {
   directory: string;
 }
 
+export type ScrollbarVisibility = 'visible' | 'auto' | 'hidden';
+
 export interface EditorSettings {
   autoindent: boolean;
   darkmode: boolean;
   wordwrap: boolean;
   whitespace: boolean;
   minimap: boolean;
+  minimapMaxColumn: number;
+  scrollbarVisibility: ScrollbarVisibility;
   systemtheme: boolean;
   scrollsync: boolean;
   sessionRestore: boolean;
   locale: string;
   fileExplorer: FileExplorerSettings;
   pasteImages: PasteImagesSettings;
+  uiFontFamily: string;
   editorFontFamily: string;
   previewTextFontFamily: string;
   previewCodeFontFamily: string;

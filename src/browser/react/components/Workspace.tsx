@@ -9,6 +9,8 @@ import {
 import { useManagers } from '../contexts/ManagersContext';
 import { useFiles } from '../contexts/FilesContext';
 import { useTranslation } from '../hooks/useTranslation';
+import { useUIState } from '../contexts/UIStateContext';
+import { cn } from '../lib/utils';
 import { Button } from './ui/button';
 import { Icon } from './Icon';
 import { EditorHost } from './EditorHost';
@@ -38,6 +40,55 @@ export const Workspace: React.FC<WorkspaceProps> = ({
   const { editorManager, bridgeManager } = useManagers();
   const { tabs } = useFiles();
   const { t } = useTranslation();
+  const { editorVisible, previewVisible, layoutResetKey } = useUIState();
+  const internalGroupRef = React.useRef<GroupImperativeHandle>(null);
+  const lastDualLayout = React.useRef({
+    'editor-pane': 50,
+    'preview-pane': 50,
+  });
+  const previousVisibility = React.useRef({ editor: true, preview: true });
+  const previousResetKey = React.useRef(layoutResetKey);
+
+  const setGroupRef = React.useCallback(
+    (handle: GroupImperativeHandle | null) => {
+      internalGroupRef.current = handle;
+      if (typeof groupRef === 'function') groupRef(handle);
+      else if (groupRef) groupRef.current = handle;
+    },
+    [groupRef],
+  );
+
+  React.useEffect(() => {
+    const group = internalGroupRef.current;
+    if (!group) return;
+    if (layoutResetKey !== previousResetKey.current) {
+      lastDualLayout.current = { 'editor-pane': 50, 'preview-pane': 50 };
+      previousResetKey.current = layoutResetKey;
+    }
+    const previous = previousVisibility.current;
+    if (
+      previous.editor &&
+      previous.preview &&
+      (!editorVisible || !previewVisible)
+    ) {
+      const current = group.getLayout();
+      if (current['editor-pane'] > 0 && current['preview-pane'] > 0) {
+        lastDualLayout.current = current as typeof lastDualLayout.current;
+      }
+    }
+    if (editorVisible && previewVisible) {
+      group.setLayout(lastDualLayout.current);
+    } else if (editorVisible) {
+      group.setLayout({ 'editor-pane': 100, 'preview-pane': 0 });
+    } else {
+      group.setLayout({ 'editor-pane': 0, 'preview-pane': 100 });
+    }
+    previousVisibility.current = {
+      editor: editorVisible,
+      preview: previewVisible,
+    };
+    editorManager?.layout();
+  }, [editorManager, editorVisible, layoutResetKey, previewVisible]);
 
   const createNewFile = React.useCallback(() => {
     if (bridgeManager) {
@@ -46,7 +97,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
   }, [bridgeManager]);
 
   return (
-    <Group orientation="horizontal" id="editor-preview" groupRef={groupRef}>
+    <Group orientation="horizontal" id="editor-preview" groupRef={setGroupRef}>
       <Panel
         id="editor-pane"
         onResize={() => editorManager?.layout()}
@@ -76,7 +127,12 @@ export const Workspace: React.FC<WorkspaceProps> = ({
           )}
         </div>
       </Panel>
-      <Separator className="gutter gutter-horizontal" />
+      <Separator
+        className={cn(
+          'gutter gutter-horizontal',
+          (!editorVisible || !previewVisible) && 'hidden',
+        )}
+      />
       <Panel id="preview-pane">
         <PreviewPane />
       </Panel>

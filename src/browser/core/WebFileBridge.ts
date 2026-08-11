@@ -97,6 +97,7 @@ export class WebFileBridge implements ContextBridgeAPI {
   private rootName = '';
   private handles = new Map<string, Handle>();
   private listeners = new Map<string, Array<(...args: any[]) => void>>();
+  private sessionCleared = false;
 
   // ContextBridgeAPI ---------------------------------------------------
 
@@ -248,7 +249,15 @@ export class WebFileBridge implements ContextBridgeAPI {
    */
   private persistSession(payload: SessionPayload): void {
     try {
-      localStorage.setItem(LS_KEY_SESSION, JSON.stringify(payload));
+      const canonical = this.sessionCleared
+        ? {
+            ...payload,
+            tabs: [],
+            activeFile: null,
+            workspaceRoot: null,
+          }
+        : payload;
+      localStorage.setItem(LS_KEY_SESSION, JSON.stringify(canonical));
     } catch (err) {
       logger?.error('WebFileBridge.persistSession', JSON.stringify(err));
     }
@@ -257,10 +266,11 @@ export class WebFileBridge implements ContextBridgeAPI {
   /**
    * Wipe the persisted session from localStorage. Mirrors desktop's
    * `AppSession.clear`. Currently-open tabs stay open; the next launch
-   * reads no session and lands on a fresh untitled. Fires the same
+   * restores no tabs. Fires the same
    * `notifications:session_cleared` toast desktop does.
    */
   private clearSession(): void {
+    this.sessionCleared = true;
     try {
       localStorage.removeItem(LS_KEY_SESSION);
     } catch (err) {

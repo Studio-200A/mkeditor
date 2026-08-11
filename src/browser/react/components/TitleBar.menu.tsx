@@ -3,17 +3,25 @@ import * as React from 'react';
 import type { MenuGroup, MenuItem } from '../../../app/lib/menuModel';
 import { dispatchMenuActionExternal } from '../../menuDispatch';
 import { useTranslation } from '../hooks/useTranslation';
+import { useUIState } from '../contexts/UIStateContext';
 import { cn } from '../lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuCheckboxItem,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 
 interface TitleBarMenuProps {
   group: MenuGroup;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onTriggerPointerEnter: () => void;
 }
 
 /** Look up `menus-titlebar:<id>` and fall back to the model's English
@@ -37,10 +45,15 @@ function useMenuLabel(): (id: string, fallback: string) => string {
  * effect (channel send / Monaco role / main-process command). The whole
  * row is keyboard-navigable via Radix's built-in arrow-key handling.
  */
-export const TitleBarMenu: React.FC<TitleBarMenuProps> = ({ group }) => {
+export const TitleBarMenu: React.FC<TitleBarMenuProps> = ({
+  group,
+  open,
+  onOpenChange,
+  onTriggerPointerEnter,
+}) => {
   const label = useMenuLabel();
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={onOpenChange} modal={false}>
       <DropdownMenuTrigger
         data-titlebar-menu={group.id}
         data-titlebar-no-drag
@@ -51,6 +64,7 @@ export const TitleBarMenu: React.FC<TitleBarMenuProps> = ({ group }) => {
           'focus:outline-none focus-visible:ring-1 focus-visible:ring-ring',
         )}
         style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+        onPointerEnter={onTriggerPointerEnter}
       >
         {label(group.id, group.label)}
       </DropdownMenuTrigger>
@@ -75,29 +89,94 @@ const MenuRow: React.FC<{ item: MenuItem; first: boolean }> = ({
   first,
 }) => {
   const label = useMenuLabel();
+  const layout = useUIState();
   const accelerator = item.accelerator
     ? formatAccelerator(item.accelerator)
     : '';
+  const isLayoutReset =
+    item.action?.kind === 'channel' &&
+    item.action.channel === 'from:layout:reset';
   return (
     <>
       {item.separatorBefore && !first && <DropdownMenuSeparator />}
-      <DropdownMenuItem
-        disabled={!item.action}
-        onSelect={() => {
-          if (item.action) dispatchMenuActionExternal(item.action);
-        }}
-        className="flex items-center justify-between gap-6 text-xs"
-      >
-        <span>{label(item.id, item.label)}</span>
-        {accelerator && (
-          <span className="text-[10px] text-muted-foreground">
-            {accelerator}
-          </span>
-        )}
-      </DropdownMenuItem>
+      {item.items ? (
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger className="text-xs">
+            {label(item.id, item.label)}
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            {item.items.map((child, idx) => (
+              <MenuRow key={child.id} item={child} first={idx === 0} />
+            ))}
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+      ) : item.layoutPart ? (
+        <DropdownMenuCheckboxItem
+          checked={layoutPartVisible(item.layoutPart, layout)}
+          onClick={() =>
+            layout.setLayoutPart(
+              item.layoutPart!,
+              !layoutPartVisible(item.layoutPart!, layout),
+            )
+          }
+          className="flex items-center justify-between gap-6 text-xs"
+        >
+          <span>{label(item.id, item.label)}</span>
+          {accelerator && (
+            <span className="text-[10px] text-muted-foreground">
+              {accelerator}
+            </span>
+          )}
+        </DropdownMenuCheckboxItem>
+      ) : (
+        <DropdownMenuItem
+          inset={isLayoutReset}
+          disabled={!item.action}
+          onSelect={() => {
+            if (
+              item.action?.kind === 'channel' &&
+              item.action.channel === 'from:layout:reset'
+            ) {
+              layout.resetLayout();
+            } else if (item.action) {
+              dispatchMenuActionExternal(item.action);
+            }
+          }}
+          className="flex items-center justify-between gap-6 text-xs"
+        >
+          <span>{label(item.id, item.label)}</span>
+          {accelerator && (
+            <span className="text-[10px] text-muted-foreground">
+              {accelerator}
+            </span>
+          )}
+        </DropdownMenuItem>
+      )}
     </>
   );
 };
+
+function layoutPartVisible(
+  part: NonNullable<MenuItem['layoutPart']>,
+  state: ReturnType<typeof useUIState>,
+): boolean {
+  switch (part) {
+    case 'toolbar':
+      return state.toolbarVisible;
+    case 'tabBar':
+      return state.tabBarVisible;
+    case 'sidebar':
+      return state.sidebarOpen;
+    case 'editor':
+      return state.editorVisible;
+    case 'preview':
+      return state.previewVisible;
+    case 'statusBar':
+      return state.statusBarVisible;
+    case 'assistant':
+      return state.rightSidebarOpen;
+  }
+}
 
 /**
  * Translate Electron's accelerator string into the form to display.

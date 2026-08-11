@@ -12,9 +12,9 @@ export interface SessionPayload {
   /**
    * Format version. v1 was the original session-restore shape; v2 adds
    * the optional `assistant` view-state block; v3 adds `sidebarOpen`
-   * and `isMaximized`.
+   * and `isMaximized`; v4 adds the complete `layout` visibility snapshot.
    */
-  version: 1 | 2 | 3;
+  version: 1 | 2 | 3 | 4;
   /** Insertion order is tab order. */
   tabs: SessionTab[];
   /** Path of the active tab. Must match a `tabs[].path` or be null. */
@@ -39,6 +39,18 @@ export interface SessionPayload {
   isMaximized?: boolean;
   /** Window bounds in windowed mode (v3): x, y, width, height. */
   bounds?: { x: number; y: number; width: number; height: number };
+  /** Complete UI visibility snapshot (v4). */
+  layout?: LayoutVisibility;
+}
+
+export interface LayoutVisibility {
+  toolbar: boolean;
+  tabBar: boolean;
+  sidebar: boolean;
+  editor: boolean;
+  preview: boolean;
+  statusBar: boolean;
+  assistant: boolean;
 }
 
 export interface AssistantViewState {

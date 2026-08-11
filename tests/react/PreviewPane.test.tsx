@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { act, waitFor } from '@testing-library/react';
+import { act, fireEvent, waitFor } from '@testing-library/react';
 
 import { PreviewPane } from '../../src/browser/react/components/PreviewPane';
 import {
@@ -36,6 +36,52 @@ function fm(opts: Parameters<typeof fakeFileManager>[0] = {}) {
 }
 
 describe('<PreviewPane>', () => {
+  it('reapplies persisted preview presentation after its DOM mounts', () => {
+    const snapshot = {
+      scrollbarVisibility: 'auto',
+      previewTextFontFamily: 'serif',
+      previewCodeFontFamily: 'monospace',
+      previewTextFontSize: 19,
+      previewCodeFontSize: 15,
+      previewZoom: 110,
+    };
+    const settingsProvider = {
+      subscribe: jest.fn(() => () => {}),
+      getSnapshot: jest.fn(() => snapshot),
+      applyPreviewFonts: jest.fn(),
+      applyPreviewFontSizes: jest.fn(),
+      applyPreviewZoom: jest.fn(),
+    };
+
+    renderWithProviders(<PreviewPane />, {
+      managers: {
+        providers: { settings: settingsProvider as any },
+      },
+    });
+
+    expect(settingsProvider.applyPreviewFonts).toHaveBeenCalled();
+    expect(settingsProvider.applyPreviewFontSizes).toHaveBeenCalled();
+    expect(settingsProvider.applyPreviewZoom).toHaveBeenCalled();
+  });
+
+  it('auto-hides the preview scrollbar 1 second after scrolling stops', () => {
+    jest.useFakeTimers();
+    try {
+      const { container } = renderWithProviders(<PreviewPane />);
+      const preview = container.querySelector('#preview') as HTMLElement;
+
+      expect(preview.dataset.scrollbarVisibility).toBe('auto');
+      fireEvent.scroll(preview);
+      expect(preview).toHaveClass('scrollbar-scrolling');
+      act(() => jest.advanceTimersByTime(999));
+      expect(preview).toHaveClass('scrollbar-scrolling');
+      act(() => jest.advanceTimersByTime(1));
+      expect(preview).not.toHaveClass('scrollbar-scrolling');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it('renders the initial markdown after the lazy Markdown chunk loads', async () => {
     const dispatcher = fakeDispatcher();
     const editorManager = {

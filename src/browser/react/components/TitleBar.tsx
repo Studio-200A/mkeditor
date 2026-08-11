@@ -23,8 +23,9 @@ import { TitleBarMenu } from './TitleBar.menu';
  */
 export const TitleBar: React.FC = () => {
   const { mode, platform } = useManagers();
-  const { maximize: toggleMaximize } = useWindowControls();
+  const { isFullScreen, maximize: toggleMaximize } = useWindowControls();
   const navRef = React.useRef<HTMLElement | null>(null);
+  const [openMenuId, setOpenMenuId] = React.useState<string | null>(null);
 
   // macOS: leave the strip empty so the native menu and traffic lights
   // stay the source of truth. `titleBarStyle: 'hiddenInset'` already
@@ -67,6 +68,8 @@ export const TitleBar: React.FC = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, [isDesktop]);
 
+  if (isFullScreen) return null;
+
   // Double-clicking the drag region toggles maximize/restore — same
   // gesture every OS uses on its native title bar. Only fires on
   // desktop; web's title bar has no concept of maximize.
@@ -107,7 +110,21 @@ export const TitleBar: React.FC = () => {
         onKeyDown={cycleMenuTriggers}
       >
         {menuModel.map((group) => (
-          <TitleBarMenu key={group.id} group={group} />
+          <TitleBarMenu
+            key={group.id}
+            group={group}
+            open={openMenuId === group.id}
+            onOpenChange={(open) => {
+              setOpenMenuId((current) =>
+                open ? group.id : current === group.id ? null : current,
+              );
+            }}
+            onTriggerPointerEnter={() => {
+              if (openMenuId && openMenuId !== group.id) {
+                setOpenMenuId(group.id);
+              }
+            }}
+          />
         ))}
       </nav>
       <div className="flex-1" />
@@ -197,7 +214,7 @@ const ControlButton: React.FC<{
     className={cn(
       'flex w-11 items-center justify-center text-foreground',
       variant === 'close'
-        ? 'hover:bg-red-600 hover:text-white'
+        ? 'hover:bg-destructive hover:text-destructive-foreground'
         : 'hover:bg-accent hover:text-accent-foreground',
       'focus:outline-none focus-visible:bg-accent',
     )}

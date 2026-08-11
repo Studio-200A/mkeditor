@@ -1,6 +1,6 @@
 # MKEditor — Roadmap
 
-Living document. Tracks planned work, open architectural questions, and recently completed milestones. Update as decisions land. For current architecture see [ARCHITECTURE.md](ARCHITECTURE.md); for quick context see [../CLAUDE.md](../CLAUDE.md).
+Living document. Tracks planned work, open architectural questions, and recently completed milestones. Update as decisions land. For current architecture see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Status Legend
 
@@ -18,8 +18,8 @@ Living document. Tracks planned work, open architectural questions, and recently
 - 🟢 **Session restore** _(2026-05-17)_ — Open tabs, the active tab, the workspace folder, and per-tab cursor/scroll/folding state survive quit/relaunch on both desktop and web. Three-phase delivery covered in [SESSION_RESTORE.md](SESSION_RESTORE.md); end-to-end surface documented in [ARCHITECTURE.md §4.12](ARCHITECTURE.md).
 - 🟢 **Web file explorer** _(2026-05-17)_ — Sidebar can open, browse, and edit local folders in Chromium-based browsers via the File System Access API. Workspace handle persists across refresh via IndexedDB.
 - 🟢 **Dependency bumps + CI + pre-commit hook** _(2026-05-17)_ — Electron `^37.4.0` → `^42.1.0`, Monaco `^0.52.2` → `^0.55.1`, TS + ESLint upgraded. CI workflow extended with `prettier-check` and `build-editor`/`build-app` verification. Husky pre-commit hook runs `prettier-check` + `lint` + `test` on every commit (`npm install` wires it via `prepare`).
-- 🟢 **React migration** _(2026-05-16)_ — Renderer rewritten as React 19 + shadcn/ui + Tailwind v4 on top of the existing managers and IPC bridge. Bootstrap, SweetAlert2, split.js, and `@popperjs/core` removed. CSS bundle shrunk ~229 KB. See [REACT_MIGRATION.md](REACT_MIGRATION.md) for the full ten-phase history; current state described in [ARCHITECTURE.md](ARCHITECTURE.md) and [../CLAUDE.md](../CLAUDE.md).
-- 🟢 **Context & architecture docs** _(2026-05-16)_ — Added [CLAUDE.md](../CLAUDE.md) and [docs/ARCHITECTURE.md](ARCHITECTURE.md) covering process boundaries, IPC contract, renderer composition, data flows, build pipeline, conventions.
+- 🟢 **React migration** _(2026-05-16)_ — Renderer rewritten as React 19 + shadcn/ui + Tailwind v4 on top of the existing managers and IPC bridge. Bootstrap, SweetAlert2, split.js, and `@popperjs/core` removed. CSS bundle shrunk ~229 KB. See [REACT_MIGRATION.md](REACT_MIGRATION.md) for the full ten-phase history; current state is described in [ARCHITECTURE.md](ARCHITECTURE.md).
+- 🟢 **Architecture documentation** _(2026-05-16)_ — Added [docs/ARCHITECTURE.md](ARCHITECTURE.md) covering process boundaries, IPC contract, renderer composition, data flows, build pipeline, and conventions.
 
 ---
 
@@ -61,11 +61,10 @@ Now that the React migration is in.
 
 - 🟢 **Session restore** _(2026-05-17)_ — Tabs, active tab, workspace folder, and per-tab cursor/scroll/folding persist across launches on both desktop and web. Three-phase delivery is documented in [SESSION_RESTORE.md](SESSION_RESTORE.md); end-to-end architecture in [ARCHITECTURE.md §4.12](ARCHITECTURE.md).
 - 🔵 **Markdown-extension styling for the live preview.** The markdown-it extensions still emit Bootstrap class names (`alert alert-*`, `img-fluid`, `table table-sm table-bordered table-striped`) so the exported HTML (which CDN-loads Bootstrap) renders correctly. The live preview only has minimal fallback styling in `_preview.scss` — alert blocks and tables show as unstyled blocks today. Add Tailwind-aware rules (or rewrite the extensions to emit Tailwind classes + keep Bootstrap classes for export only) so the live preview matches the export.
-- 🔵 **Expanded component test coverage.** Phase 10 landed the 5 spec'd RTL suites (`TabBar`, `FileTreePanel`, `SettingsModal`, `EditorToolbar`, `PreviewPane`). Next layer: the rest of `react/components/modals/*`, `BottomToolbarRight`, `Navbar`, the `PromptDialog` flow, hooks (`useCounts`, `useNotify`).
+- 🔵 **Expanded component test coverage.** Phase 10 landed the 5 spec'd RTL suites (`TabBar`, `FileTreePanel`, `SettingsModal`, `EditorToolbar`, `PreviewPane`). Next layer: the rest of `react/components/modals/*`, `Navbar`, the `PromptDialog` flow, and `useCounts`.
 - ⚪ **Theming customisation.** Dark/light is hardwired today; explore exposing the brand `--primary` and a couple of secondary tokens as user settings.
 - ⚪ **Plugin/extension system for users.** markdown-it has the seams already ([extensions/README.md](../src/browser/extensions/README.md)); the React UI side is now much easier to extend.
 - ⚪ **Phase 9 dom.ts residue.** `dom.ts` retains four constants (`editor.dom`, `preview.dom`, `preview.wrapper`, `meta.scroll`) for `HTMLExporter` + `ScrollSync` + `LineNumber` + the test fallback. If those consumers move under React (or expose their own seam), the file can be retired entirely.
-- ⚪ **`document.getElementById` portal-host pattern.** `<EditorToolbar>` and `<BottomToolbarRight>` portal into static-HTML hosts inside the bottom `<nav>` shell. Could be cleaned up by either rendering the bottom nav from React directly, or moving the `<nav>` shell inside `#react-root`.
 
 ---
 

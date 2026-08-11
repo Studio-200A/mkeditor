@@ -55,7 +55,7 @@ export const AssistantSettings: React.FC = () => {
       {mode === 'web' && (
         <div
           role="note"
-          className="rounded-md border border-amber-400/40 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-400/30 dark:bg-amber-950/40 dark:text-amber-200"
+          className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning"
         >
           <Icon name="exclamation-circle" className="mr-1" />
           {t('assistant-settings:web_warning')}
@@ -65,7 +65,7 @@ export const AssistantSettings: React.FC = () => {
       {!snapshot.encryptionAvailable && (
         <div
           role="note"
-          className="rounded-md border border-red-400/40 bg-red-50 px-3 py-2 text-xs text-red-900 dark:border-red-400/30 dark:bg-red-950/40 dark:text-red-200"
+          className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive"
         >
           <Icon name="exclamation-circle" className="mr-1" />
           {t('assistant-settings:encryption_unavailable')}
@@ -479,9 +479,8 @@ type TestStatus = 'unknown' | 'testing' | 'connected' | 'failed';
 
 const STATUS_CLASS: Record<Exclude<TestStatus, 'unknown'>, string> = {
   testing: 'bg-muted text-muted-foreground',
-  connected:
-    'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-200',
-  failed: 'bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-200',
+  connected: 'bg-success/10 text-success',
+  failed: 'bg-destructive/10 text-destructive',
 };
 
 const ProviderCard: React.FC<{

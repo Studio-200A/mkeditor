@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
 /**
  * "About MKEditor" modal. Static info: version, credit, libraries used,
  * source link. Triggered from the build-version chip click in
- * <BottomToolbarRight> and from Ctrl+/ via CommandProvider.
+ * <Navbar> and from Ctrl+/ via CommandProvider.
  */
 export const AboutModal: React.FC = () => {
   const { open, closeModal } = useModals();

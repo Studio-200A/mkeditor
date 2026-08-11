@@ -1,6 +1,6 @@
 #sidebar {
   flex: 0 0 auto;
-  background-color: #f3f3f3;
+  background-color: var(--sidebar-background);
   overflow-y: auto;
   height: 100%;
 
@@ -9,13 +9,13 @@
     font-weight: bold;
     text-transform: uppercase;
     margin-bottom: 0.5em;
-    color: #838383;
+    color: var(--muted-foreground);
   }
 }
 
 #file-tree {
   font-size: 0.85rem;
-  color: #454545;
+  color: var(--foreground);
 
   li {
     white-space: nowrap;
@@ -30,12 +30,12 @@
       text-overflow: ellipsis;
 
       &:hover {
-        background-color: #e1e4e8;
+        background-color: var(--accent);
       }
 
       &.active {
-        background-color: #d7d7d7;
-        color: #222222;
+        background-color: var(--secondary);
+        color: var(--secondary-foreground);
         font-weight: bold;
       }
 

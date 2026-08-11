@@ -4,6 +4,7 @@ const app = {
   isReady: jest.fn(() => true),
   getName: jest.fn(() => 'mkeditor'),
   getVersion: jest.fn(() => '0.0.0'),
+  getLocale: jest.fn(() => 'en-US'),
   getPath: jest.fn(),
   isPackaged: false,
   quit: jest.fn(),

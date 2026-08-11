@@ -24,6 +24,7 @@ import {
   clearAssistantStateChangeListener,
   registerToggleRightSidebar,
   toggleRightSidebarExternal,
+  applyRestoredLayoutState,
 } from '../../src/browser/react/contexts/UIStateContext';
 
 interface Capture {
@@ -168,5 +169,52 @@ describe('toggleRightSidebarExternal seam (P8)', () => {
       toggleRightSidebarExternal();
     });
     expect(capture.current?.rightSidebarOpen).toBe(false);
+  });
+});
+
+describe('layout visibility', () => {
+  it('never allows editor and preview to both be hidden', () => {
+    const capture: Capture = { current: null };
+    render(
+      <UIStateProvider initialSidebarOpen>
+        <Probe capture={capture} />
+      </UIStateProvider>,
+    );
+
+    act(() => capture.current?.setLayoutPart('editor', false));
+    expect(capture.current?.editorVisible).toBe(false);
+    act(() => capture.current?.setLayoutPart('preview', false));
+    expect(capture.current?.previewVisible).toBe(true);
+  });
+
+  it('restores a persisted layout and sanitizes an invalid empty workspace', () => {
+    const capture: Capture = { current: null };
+    render(
+      <UIStateProvider initialSidebarOpen>
+        <Probe capture={capture} />
+      </UIStateProvider>,
+    );
+
+    act(() => {
+      applyRestoredLayoutState({
+        toolbar: false,
+        tabBar: false,
+        sidebar: false,
+        editor: false,
+        preview: false,
+        statusBar: false,
+        assistant: true,
+      });
+    });
+
+    expect(capture.current).toMatchObject({
+      toolbarVisible: false,
+      tabBarVisible: false,
+      sidebarOpen: false,
+      editorVisible: true,
+      previewVisible: true,
+      statusBarVisible: false,
+      rightSidebarOpen: true,
+    });
   });
 });

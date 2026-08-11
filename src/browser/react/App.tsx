@@ -58,6 +58,7 @@ import { WindowProvider } from './contexts/WindowContext';
 import { registerMenuActionDispatcher } from '../menuDispatch';
 import type { MenuAction } from '../../app/lib/menuModel';
 import type { ModalKey } from './contexts/ModalsContext';
+import { cn } from './lib/utils';
 
 // Modals are lazy: each one is a separate webpack chunk that is only
 // fetched the first time the user opens it. The five modal components
@@ -160,15 +161,10 @@ export const App: React.FC<AppProps> = ({
                         <FilesProvider>
                           <FileTreeProvider>
                             <TitleBar />
-                            <EditorToolbar
-                              workspaceGroupRef={workspaceGroupRef}
-                            />
-                            <TabBar />
-                            <Shell
+                            <LayoutContent
                               onEditorReady={onEditorReady}
                               workspaceGroupRef={workspaceGroupRef}
                             />
-                            <Navbar />
                             <LazyModals />
                             <ConfirmToolCall />
                             <Toaster
@@ -189,6 +185,26 @@ export const App: React.FC<AppProps> = ({
         </ExportSettingsContextProvider>
       </SettingsContextProvider>
     </ManagersProvider>
+  );
+};
+
+const LayoutContent: React.FC<{
+  onEditorReady?: () => void;
+  workspaceGroupRef: React.RefObject<GroupImperativeHandle | null>;
+}> = ({ onEditorReady, workspaceGroupRef }) => {
+  const { toolbarVisible, tabBarVisible, statusBarVisible } = useUIState();
+  return (
+    <>
+      {toolbarVisible && (
+        <EditorToolbar workspaceGroupRef={workspaceGroupRef} />
+      )}
+      {tabBarVisible && <TabBar />}
+      <Shell
+        onEditorReady={onEditorReady}
+        workspaceGroupRef={workspaceGroupRef}
+      />
+      {statusBarVisible && <Navbar />}
+    </>
   );
 };
 
@@ -485,13 +501,23 @@ export const Shell: React.FC<{
       >
         <Sidebar />
       </Panel>
-      <Separator className="gutter sidebar-gutter-horizontal" />
+      <Separator
+        className={cn(
+          'gutter sidebar-gutter-horizontal',
+          !sidebarOpen && 'hidden',
+        )}
+      />
       <Panel id="workspace-pane">
         <Workspace groupRef={workspaceGroupRef} onEditorReady={onEditorReady} />
       </Panel>
       {showAssistant && (
         <>
-          <Separator className="gutter sidebar-gutter-horizontal" />
+          <Separator
+            className={cn(
+              'gutter sidebar-gutter-horizontal',
+              !rightSidebarOpen && 'hidden',
+            )}
+          />
           <Panel
             id="assistant-pane"
             panelRef={assistantPanelRef}

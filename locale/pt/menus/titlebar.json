@@ -20,6 +20,15 @@
   "edit.paste": "Colar",
 
   "view.palette": "Abrir paleta de comandos",
+  "view.layout": "Layout",
+  "view.layout.toolbar": "Mostrar barra de ferramentas",
+  "view.layout.tabs": "Mostrar barra de separadores",
+  "view.layout.sidebar": "Mostrar barra lateral do explorador",
+  "view.layout.editor": "Mostrar editor",
+  "view.layout.preview": "Mostrar pré-visualização",
+  "view.layout.statusbar": "Mostrar barra de estado",
+  "view.layout.assistant": "Mostrar barra lateral do assistente de IA",
+  "view.layout.reset": "Repor layout",
   "view.fullscreen": "Alternar tela cheia",
   "view.devtools": "Alternar ferramentas de desenvolvedor",
 

@@ -142,7 +142,7 @@ export const Navbar: React.FC = () => {
           <div className="flex items-center gap-1">
             <Icon
               name="moon"
-              className={settings.effectiveDarkmode ? 'text-yellow-400' : ''}
+              className={settings.effectiveDarkmode ? 'text-warning' : ''}
             />
             <Switch
               id="darkmode-setting"

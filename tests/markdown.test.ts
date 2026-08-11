@@ -76,4 +76,62 @@ describe('Markdown', () => {
     const fileOutput = Markdown.render('hello.py');
     expect(fileOutput).not.toContain('<a');
   });
+
+  it('renders GFM task lists and strikethrough', () => {
+    const output = Markdown.render('- [ ] todo\n- [x] done\n\n~~removed~~');
+
+    expect(output).toContain('class="contains-task-list"');
+    expect(output).toContain(
+      'class="task-list-item-checkbox" disabled="" type="checkbox"',
+    );
+    expect(output).toContain(
+      'class="task-list-item-checkbox" checked="" disabled="" type="checkbox"',
+    );
+    expect(output).toContain('<s>removed</s>');
+  });
+
+  it('auto-links GFM www and email text without linking file names', () => {
+    const output = Markdown.render(
+      'Visit www.example.com or email person@example.com, not notes.md.',
+    );
+
+    expect(output).toContain('href="http://www.example.com"');
+    expect(output).toContain('href="mailto:person@example.com"');
+    expect(output).toContain('not notes.md');
+    expect(output).not.toContain('href="http://notes.md"');
+  });
+
+  it('filters GFM-disallowed raw HTML tags but preserves allowed HTML', () => {
+    const output = Markdown.render(
+      '<script>alert(1)</script>\n\n<details>allowed</details>',
+    );
+
+    expect(output).not.toContain('<script>');
+    expect(output).toContain('&lt;script>alert(1)&lt;/script>');
+    expect(output).toContain('<details>allowed</details>');
+  });
+
+  it.each(['NOTE', 'TIP', 'IMPORTANT', 'WARNING', 'CAUTION'])(
+    'renders a GitHub %s alert without exposing its marker',
+    (type) => {
+      const output = Markdown.render(
+        `> [!${type}]\n> Alert content for ${type.toLowerCase()}.`,
+      );
+
+      expect(output).toContain(
+        `class="markdown-alert markdown-alert-${type.toLowerCase()}"`,
+      );
+      expect(output).toContain('class="markdown-alert-title"');
+      expect(output).toContain(`<span>${type}</span>`);
+      expect(output).toContain(`Alert content for ${type.toLowerCase()}.`);
+      expect(output).not.toContain(`[!${type}]`);
+    },
+  );
+
+  it('keeps ordinary blockquotes unchanged', () => {
+    const output = Markdown.render('> Ordinary quote');
+
+    expect(output).toContain('<blockquote>');
+    expect(output).not.toContain('markdown-alert');
+  });
 });

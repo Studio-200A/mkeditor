@@ -20,6 +20,15 @@
   "edit.paste": "Plakken",
 
   "view.palette": "Opdrachtenpalet openen",
+  "view.layout": "Indeling",
+  "view.layout.toolbar": "Werkbalk weergeven",
+  "view.layout.tabs": "Tabbladbalk weergeven",
+  "view.layout.sidebar": "Verkennerzijbalk weergeven",
+  "view.layout.editor": "Editor weergeven",
+  "view.layout.preview": "Voorbeeld weergeven",
+  "view.layout.statusbar": "Statusbalk weergeven",
+  "view.layout.assistant": "AI-assistentzijbalk weergeven",
+  "view.layout.reset": "Indeling herstellen",
   "view.fullscreen": "Volledig scherm in-/uitschakelen",
   "view.devtools": "Ontwikkelaarstools in-/uitschakelen",
 

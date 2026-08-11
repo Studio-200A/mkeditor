@@ -40,6 +40,9 @@ export class AppSession {
   /** Tmp path used by the atomic write. */
   private static readonly tmpPath = AppSession.filePath + '.tmp';
 
+  /** Keep "Clear saved session" effective through the final quit flush. */
+  private static tabsClearedForProcess = false;
+
   /**
    * Current canonical schema version. Writes always stamp this.
    * The loader additionally accepts older versions in
@@ -52,21 +55,25 @@ export class AppSession {
    *
    * v2 → v3: added optional `sidebarOpen` (left file-tree sidebar)
    * and `isMaximized` (window state) fields.
+   *
+   * v3 → v4: added the complete `layout` visibility snapshot.
    */
-  private static readonly SCHEMA_VERSION = 3;
+  private static readonly SCHEMA_VERSION = 4;
 
   /**
    * Versions the loader is willing to read. Anything outside this set
    * falls back to "no session" (the safer half of forward-compat).
    */
-  private static readonly SUPPORTED_VERSIONS: ReadonlyArray<number> = [1, 2, 3];
+  private static readonly SUPPORTED_VERSIONS: ReadonlyArray<number> = [
+    1, 2, 3, 4,
+  ];
 
   /**
    * Read and validate the persisted session. Returns null if:
    *   - the file is absent
    *   - the JSON fails to parse
    *   - the parsed payload doesn't match `SessionPayload` shape
-   *   - the schema version doesn't match `SCHEMA_VERSION`
+   *   - the schema version is outside the supported v1-v4 range
    *
    * Never throws. Callers should treat null as "no prior session".
    */
@@ -111,11 +118,20 @@ export class AppSession {
       // Stamp the schema version on every write, even if the caller
       // supplied a different value — the canonical file is always at
       // the loader's known version.
-      const serialised = JSON.stringify(
-        { ...payload, version: AppSession.SCHEMA_VERSION },
-        null,
-        2,
-      );
+      const canonical = AppSession.tabsClearedForProcess
+        ? {
+            ...payload,
+            tabs: [],
+            activeFile: null,
+            workspaceRoot: null,
+          }
+        : payload;
+      const versioned = {
+        ...canonical,
+        version: AppSession.SCHEMA_VERSION,
+      };
+      if (!AppSession.isValidPayload(versioned)) return;
+      const serialised = JSON.stringify(versioned, null, 2);
 
       writeFileSync(AppSession.tmpPath, serialised, { encoding: 'utf-8' });
       renameSync(AppSession.tmpPath, AppSession.filePath);
@@ -136,7 +152,7 @@ export class AppSession {
   ): void {
     const current = AppSession.load();
     AppSession.save({
-      version: 3,
+      version: 4,
       tabs: [],
       activeFile: null,
       workspaceRoot: null,
@@ -152,6 +168,7 @@ export class AppSession {
    * action. Never throws — a missing file is a successful no-op.
    */
   static clear(): void {
+    AppSession.tabsClearedForProcess = true;
     try {
       if (existsSync(AppSession.filePath)) unlinkSync(AppSession.filePath);
     } catch {
@@ -226,6 +243,7 @@ export class AppSession {
         sidebarOpen: payload.sidebarOpen,
         isMaximized: payload.isMaximized,
         bounds: payload.bounds,
+        layout: payload.layout,
       },
       missing,
       contents,
@@ -245,6 +263,7 @@ export class AppSession {
       sidebarOpen?: unknown;
       isMaximized?: unknown;
       bounds?: unknown;
+      layout?: unknown;
     };
     if (
       typeof candidate.version !== 'number' ||
@@ -298,6 +317,13 @@ export class AppSession {
     ) {
       return false;
     }
+    if (
+      'layout' in candidate &&
+      candidate.layout !== undefined &&
+      !AppSession.isValidLayout(candidate.layout)
+    ) {
+      return false;
+    }
     for (const tab of candidate.tabs) {
       if (!AppSession.isValidTab(tab)) return false;
     }
@@ -326,14 +352,34 @@ export class AppSession {
     return true;
   }
 
+  private static isValidLayout(value: unknown): boolean {
+    if (typeof value !== 'object' || value === null) return false;
+    const layout = value as Record<string, unknown>;
+    return [
+      'toolbar',
+      'tabBar',
+      'sidebar',
+      'editor',
+      'preview',
+      'statusBar',
+      'assistant',
+    ].every((key) => typeof layout[key] === 'boolean');
+  }
+
   private static isValidBounds(value: unknown): boolean {
     if (typeof value !== 'object' || value === null) return false;
     const b = value as Record<string, unknown>;
     return (
       typeof b.x === 'number' &&
+      Number.isFinite(b.x) &&
       typeof b.y === 'number' &&
+      Number.isFinite(b.y) &&
       typeof b.width === 'number' &&
-      typeof b.height === 'number'
+      Number.isFinite(b.width) &&
+      b.width > 0 &&
+      typeof b.height === 'number' &&
+      Number.isFinite(b.height) &&
+      b.height > 0
     );
   }
 }

@@ -20,6 +20,15 @@
   "edit.paste": "Paste",
 
   "view.palette": "Open Command Palette",
+  "view.layout": "Layout",
+  "view.layout.toolbar": "Show Toolbar",
+  "view.layout.tabs": "Show Tab Bar",
+  "view.layout.sidebar": "Show Explorer Sidebar",
+  "view.layout.editor": "Show Editor",
+  "view.layout.preview": "Show Preview",
+  "view.layout.statusbar": "Show Status Bar",
+  "view.layout.assistant": "Show AI Assistant Sidebar",
+  "view.layout.reset": "Reset Layout",
   "view.fullscreen": "Toggle Full Screen",
   "view.devtools": "Toggle Developer Tools",
 

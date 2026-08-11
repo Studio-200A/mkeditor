@@ -345,7 +345,9 @@ export const FileTreePanel: React.FC = () => {
                 void handleMoveDrop(src, treeRoot);
               }}
             >
-              <Icon name="folder-open" />
+              <span className="text-folder-icon">
+                <Icon name="folder-open" />
+              </span>
               <span className="flex-1 truncate" title={treeRoot ?? undefined}>
                 {workspaceLabel}
               </span>
@@ -393,8 +395,8 @@ export const FileTreePanel: React.FC = () => {
                   soft tinted bg, coloured left border, uppercase
                   "Warning" label. Body text inherits the sidebar's
                   muted foreground. */}
-              <div className="mt-3 rounded-md border-l-4 border-[#9a6700] bg-[rgba(154,103,0,0.08)] px-3 py-2 dark:bg-[rgba(187,128,9,0.15)]">
-                <div className="mb-1 text-[0.65rem] font-bold uppercase tracking-wider text-[#9a6700]">
+              <div className="mt-3 rounded-md border-l-4 border-warning bg-warning/10 px-3 py-2">
+                <div className="mb-1 text-[0.65rem] font-bold uppercase tracking-wider text-warning">
                   Warning
                 </div>
                 <div className="text-foreground">
@@ -558,7 +560,11 @@ const NodeRow: React.FC<NodeRowProps> = ({
         >
           <Icon name={expanded ? 'chevron-down' : 'chevron-right'} />
         </span>
-        <span className="mr-1">
+        <span
+          className={`mr-1 ${
+            node.type === 'directory' ? 'text-folder-icon' : 'text-file-icon'
+          }`}
+        >
           <Icon
             name={
               node.type === 'directory'

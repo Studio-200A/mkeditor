@@ -54,7 +54,10 @@ export class BridgeManager {
    *  `WindowContext` reads this via `subscribeWindowState` +
    *  `getWindowState`. The snapshot reference is stable between emits
    *  so `useSyncExternalStore`'s `===` compare is safe. */
-  private windowState: { isMaximized: boolean } = { isMaximized: false };
+  private windowState: { isMaximized: boolean; isFullScreen: boolean } = {
+    isMaximized: false,
+    isFullScreen: false,
+  };
   private windowListeners = new Set<() => void>();
 
   /**
@@ -192,7 +195,7 @@ export class BridgeManager {
   }
 
   /** Latest maximize state; stable reference between emits. */
-  public getWindowState(): { isMaximized: boolean } {
+  public getWindowState(): { isMaximized: boolean; isFullScreen: boolean } {
     return this.windowState;
   }
 
@@ -201,8 +204,16 @@ export class BridgeManager {
    * object only when the value actually changes so consumers' `===`
    * compares stay stable on no-op events.
    */
-  public setWindowState(next: { isMaximized: boolean }): void {
-    if (this.windowState.isMaximized === next.isMaximized) return;
+  public setWindowState(next: {
+    isMaximized: boolean;
+    isFullScreen: boolean;
+  }): void {
+    if (
+      this.windowState.isMaximized === next.isMaximized &&
+      this.windowState.isFullScreen === next.isFullScreen
+    ) {
+      return;
+    }
     this.windowState = next;
     this.windowListeners.forEach((l) => l());
   }
@@ -221,6 +232,12 @@ export class BridgeManager {
 
   public windowToggleFullscreen(): void {
     this.bridge.send('to:window:fullscreen', null);
+  }
+
+  public syncLayoutState(
+    state: import('../interfaces/Session').LayoutVisibility,
+  ): void {
+    this.bridge.send('to:layout:state', state);
   }
 
   /** Fires `to:command:run` so main's `AppMenu.runCommand` runs the

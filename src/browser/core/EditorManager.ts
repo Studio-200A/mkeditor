@@ -95,7 +95,7 @@ export class EditorManager {
     // <Counts> via useCounts (word/character counts). EditorManager
     // no longer subscribes here. The version build chip and About
     // modal version label both source APP_VERSION directly from
-    // <BottomToolbarRight> / <AboutModal>.
+    // <Navbar> / <AboutModal>.
 
     if (opts.init) {
       this.create({ watch: opts.watch });

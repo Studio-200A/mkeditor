@@ -21,6 +21,7 @@ import { AppSettings } from './lib/AppSettings';
 import { AppStorage } from './lib/AppStorage';
 import { AppWindow } from './lib/AppWindow';
 import { runQuitFlush } from './lib/quitFlush';
+import { shouldDisableUpdater } from './lib/updaterPolicy';
 import { iconBase64 } from './assets/icon';
 import type { LogConfig } from './interfaces/Logging';
 
@@ -44,13 +45,10 @@ const logconfig: LogConfig = { log, logpath };
 
 /** --------------------Auto Updates------------------------------ */
 
-// Portable / custom-fork builds should not phone home to the upstream
-// release feed. Set MKEDITOR_DISABLE_UPDATER=1 in the environment to
-// disable all auto-updater activity (config, check, notifications).
-// The portable build script advises this; advanced users can set it
-// on a standard deb/pkg installation too if they manage updates
-// themselves.
-const DISABLE_UPDATER = process.env.MKEDITOR_DISABLE_UPDATER === '1';
+// Custom builds default to no upstream updates so an official release cannot
+// silently replace the fork. Official builds retain the existing behavior;
+// MKEDITOR_ENABLE_UPDATER=1 is an explicit opt-in for custom packages.
+const DISABLE_UPDATER = shouldDisableUpdater(app.getVersion());
 
 if (!DISABLE_UPDATER) {
   // Configure the auto-update
@@ -92,7 +90,7 @@ function main(file: string | null = null) {
   // window-control buttons. macOS keeps the native traffic lights via
   // `titleBarStyle: 'hiddenInset'` and continues to use the system menu
   // bar — `trafficLightPosition` nudges the buttons down so they align
-  // with the title row P3 will tune.
+  // with the title row.
   const isMac = process.platform === 'darwin';
   let chrome: Electron.BrowserWindowConstructorOptions;
   if (isMac) {
@@ -227,8 +225,8 @@ function main(file: string | null = null) {
     return { action: 'deny' }; // No new window in main process
   });
 
-  // On finished frotend loading, set the editor theme and settings,
-  // and set the active file (untitled new file if no file open).
+  // On finished frontend loading, set theme/settings/session state and open
+  // an explicitly requested file. A normal zero-tab launch stays empty.
   context.webContents.on('did-finish-load', () => {
     if (context) {
       context.webContents.send(
@@ -371,16 +369,11 @@ app.on('activate', () => {
   }
 });
 
-// MacOS / Linux - open with... Also handle files using the same
-// running instance. The file path is passed by the OS; on Linux it
-// arrives as a command-line argument, on macOS via the event.
-app.on('open-file', (event) => {
+// macOS sends the selected path directly with this event. Linux startup and
+// second-instance paths are handled through argv above.
+app.on('open-file', (event, filePath) => {
   event.preventDefault();
-  let file: string | null = null;
-  if (process.argv.length >= 2) {
-    file =
-      process.argv.find((arg) => arg.toLowerCase().endsWith('.md')) ?? null;
-  }
+  const file = filePath.toLowerCase().endsWith('.md') ? filePath : null;
 
   if (!context) {
     main(file);

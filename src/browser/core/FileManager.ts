@@ -2,6 +2,7 @@ import { editor } from 'monaco-editor';
 import type { ContextBridgeAPI } from '../interfaces/Bridge';
 import type {
   AssistantViewState,
+  LayoutVisibility,
   SessionPayload,
   SessionRestoreEnvelope,
   SessionTab,
@@ -189,6 +190,8 @@ export class FileManager {
   private assistantStateGetter: (() => AssistantViewState | null) | null = null;
 
   private sidebarOpenGetter: (() => boolean) | null = null;
+
+  private layoutStateGetter: (() => LayoutVisibility) | null = null;
 
   private windowMaximizedGetter: (() => boolean) | null = null;
 
@@ -577,8 +580,8 @@ export class FileManager {
       // No tabs left — the editor is now empty. Show the empty-state
       // overlay (handled by React Workspace). Don't auto-create an
       // untitled here; the user must explicitly create a new file.
+      this.clearEmptyEditorState();
       mdl.dispose();
-      this.emitChange();
       this.scheduleSessionSave();
       return 'closed';
     }
@@ -895,7 +898,7 @@ export class FileManager {
   /**
    * Drop a diff tab — payload + TabInfo. No save prompt (read-only).
    * If the tab was active, falls back to the next remaining tab or
-   * seeds a fresh untitled if none remain. Called by `closeTab` when
+   * clears the editor if none remain. Called by `closeTab` when
    * it detects a `kind: 'diff'` tab.
    */
   private closeDiffTab(path: string): void {
@@ -915,12 +918,23 @@ export class FileManager {
       // No tabs left — the editor is now empty. Same behavior as
       // closeTab: show the empty-state overlay, don't auto-create
       // an untitled.
+      this.clearEmptyEditorState();
       this.scheduleSessionSave();
       return;
     }
 
     this.emitChange();
     this.scheduleSessionSave();
+  }
+
+  private clearEmptyEditorState(): void {
+    this.mkeditor.setModel(null);
+    this.isLogFile = false;
+    this.dispatcher.setTrackedContent({ content: '' });
+    this.trackContentHasChanged(false);
+    this.bridge.send('to:title:set', 'MKEditor');
+    this.emitChange();
+    this.dispatcher.render();
   }
 
   // ---------------------------------------------------------------------
@@ -1132,6 +1146,10 @@ export class FileManager {
     this.sidebarOpenGetter = fn;
   }
 
+  public setLayoutStateGetter(fn: () => LayoutVisibility): void {
+    this.layoutStateGetter = fn;
+  }
+
   /**
    * Inject a getter for window maximized state. Wired through the
    * `assistantUiState` seam; the composition root points it at
@@ -1154,9 +1172,8 @@ export class FileManager {
   /**
    * Inject a getter for the user's `sessionRestore` setting. Wired by
    * the composition root to `SettingsProvider.getSetting('sessionRestore')`.
-   * When the getter returns `false`, `scheduleSessionSave` and
-   * `restoreSession` short-circuit and neither writes nor reads the
-   * persisted file.
+   * Saves still carry layout/window state when false, but tab, workspace,
+   * and cursor data are omitted and restoreSession skips replaying them.
    */
   public setSessionEnabledGetter(fn: () => boolean): void {
     this.sessionEnabledGetter = fn;
@@ -1231,16 +1248,21 @@ export class FileManager {
       activeFile = tabs.length > 0 ? tabs[0].path : null;
     }
 
+    const persistTabs = this.isSessionEnabled();
     const payload: SessionPayload = {
-      version: 3,
-      tabs,
-      activeFile,
-      workspaceRoot: this.workspaceRootGetter?.() ?? null,
+      version: 4,
+      tabs: persistTabs ? tabs : [],
+      activeFile: persistTabs ? activeFile : null,
+      workspaceRoot: persistTabs
+        ? (this.workspaceRootGetter?.() ?? null)
+        : null,
     };
     const assistant = this.assistantStateGetter?.();
     if (assistant) payload.assistant = assistant;
     const sidebarOpen = this.sidebarOpenGetter?.();
     if (sidebarOpen !== undefined) payload.sidebarOpen = sidebarOpen;
+    const layout = this.layoutStateGetter?.();
+    if (layout) payload.layout = layout;
     const isMaximized = this.windowMaximizedGetter?.();
     if (isMaximized !== undefined) payload.isMaximized = isMaximized;
     return payload;

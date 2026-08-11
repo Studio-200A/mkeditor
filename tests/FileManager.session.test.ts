@@ -85,7 +85,7 @@ function makeMkeditor() {
   let viewState: unknown = null;
   const stub = {
     getModel: jest.fn(() => currentModel),
-    setModel: jest.fn((m: { getValue: () => string }) => {
+    setModel: jest.fn((m: { getValue: () => string } | null) => {
       currentModel = m;
     }),
     getValue: jest.fn(() => currentModel?.getValue() ?? ''),
@@ -131,7 +131,7 @@ describe('FileManager.serializeSession', () => {
 
     const payload = fm.serializeSession();
     expect(payload).toEqual({
-      version: 3,
+      version: 4,
       tabs: [],
       activeFile: null,
       workspaceRoot: null,
@@ -177,6 +177,27 @@ describe('FileManager.serializeSession', () => {
     fm.setAssistantStateGetter(() => null);
     const payload = fm.serializeSession();
     expect(payload.assistant).toBeUndefined();
+  });
+
+  it('includes the complete layout snapshot from the injected getter', async () => {
+    const { FileManager, EditorDispatcher } = await loadFileManager();
+    const { bridge } = makeBridge();
+    const fm = new FileManager(
+      bridge as never,
+      makeMkeditor() as never,
+      new EditorDispatcher(),
+    );
+    const layout = {
+      toolbar: false,
+      tabBar: true,
+      sidebar: false,
+      editor: true,
+      preview: false,
+      statusBar: true,
+      assistant: true,
+    };
+    fm.setLayoutStateGetter(() => layout);
+    expect(fm.serializeSession().layout).toEqual(layout);
   });
 
   it('includes the workspace root from the injected getter', async () => {
@@ -566,7 +587,7 @@ describe('FileManager.scheduleSessionSave', () => {
     expect(saves.length).toBeGreaterThan(0);
   });
 
-  it('always fires a save regardless of sessionEnabled getter', async () => {
+  it('persists layout but omits tabs when session restore is disabled', async () => {
     const { FileManager, EditorDispatcher } = await loadFileManager();
     const { bridge, sent } = makeBridge();
     const fm = new FileManager(
@@ -579,10 +600,11 @@ describe('FileManager.scheduleSessionSave', () => {
     fm.seedUntitled('hello');
 
     jest.advanceTimersByTime(1000);
-    // Session save now fires even when sessionEnabled is false —
-    // sidebar/window state persistence is independent of tab restore.
+    // Layout/window state persistence is independent of tab restore.
     const saves = sent.filter((s) => s.channel === 'to:session:save');
     expect(saves.length).toBe(1);
+    expect(saves[0].data.tabs).toEqual([]);
+    expect(saves[0].data.activeFile).toBeNull();
     expect(saves[0].data.sidebarOpen).toBeUndefined();
   });
 
@@ -602,8 +624,9 @@ describe('FileManager.scheduleSessionSave', () => {
     enabled = false;
     jest.advanceTimersByTime(1000);
 
-    // Save still fires — the gate was removed.
-    expect(sent.filter((s) => s.channel === 'to:session:save')).toHaveLength(1);
+    const saves = sent.filter((s) => s.channel === 'to:session:save');
+    expect(saves).toHaveLength(1);
+    expect(saves[0].data.tabs).toEqual([]);
   });
 });
 
@@ -960,6 +983,7 @@ describe('FileManager serialize ↔ restore round-trip', () => {
 describe('FileManager per-tab dirty tracking', () => {
   beforeEach(() => {
     jest.useFakeTimers();
+    jest.clearAllMocks();
   });
   afterEach(() => {
     jest.useRealTimers();
@@ -1019,6 +1043,30 @@ describe('FileManager per-tab dirty tracking', () => {
     // closes — the editor shows the empty-state overlay instead.
     expect(fm.getSnapshot().tabs).toHaveLength(0);
     expect(fm.activeFile).toBeNull();
+  });
+
+  it('discarding the dirty final tab clears Monaco, preview state, and the main dirty flag', async () => {
+    const { FileManager, EditorDispatcher } = await loadFileManager();
+    const { bridge, sent } = makeBridge();
+    const mk = makeMkeditor();
+    const dispatcher = new EditorDispatcher();
+    const renderListener = jest.fn();
+    dispatcher.addEventListener('editor:render', renderListener);
+    const fm = new FileManager(bridge as never, mk as never, dispatcher);
+
+    fm.seedUntitled('');
+    const model = fm.models.get('untitled-1')!;
+    model.setValue('discard me');
+    fm.trackContentHasChanged(true);
+
+    await expect(fm.closeTab('untitled-1')).resolves.toBe('closed');
+
+    expect(fm.getSnapshot()).toEqual({ tabs: [], activeFile: null });
+    expect(mk.setModel).toHaveBeenLastCalledWith(null);
+    expect(mk.getValue()).toBe('');
+    expect(fm.contentHasChanged).toBe(false);
+    expect(sent).toContainEqual({ channel: 'to:editor:state', data: false });
+    expect(renderListener).toHaveBeenCalled();
   });
 
   it('closeOtherTabs closes every tab except the kept path', async () => {

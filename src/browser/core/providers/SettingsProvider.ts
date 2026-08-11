@@ -6,10 +6,18 @@ import type {
 } from '../../interfaces/Editor';
 import {
   settings,
+  DEFAULT_UI_FONT_FAMILY,
   DEFAULT_EDITOR_FONT_FAMILY,
   DEFAULT_PREVIEW_TEXT_FONT_FAMILY,
   DEFAULT_PREVIEW_CODE_FONT_FAMILY,
+  minimapOptions,
+  monacoScrollbarOptions,
 } from '../../config';
+import {
+  MONOKAI_PRO_THEME_NAME,
+  registerMonokaiProTheme,
+} from '../../themes/monokaiPro';
+import { resolveLocale } from '../../i18n';
 
 type PersistHandler = (next: Partial<SettingsFile>) => void;
 
@@ -53,6 +61,9 @@ export class SettingsProvider {
    */
   private osDarkmode: boolean | null = null;
 
+  /** Extends Monaco's native 500ms auto-hide period to the requested 1000ms. */
+  private scrollbarHideTimer: number | null = null;
+
   /**
    * Create a new editor settings handler.
    */
@@ -63,7 +74,9 @@ export class SettingsProvider {
     this.mode = mode;
     this.mkeditor = mkeditor;
 
+    registerMonokaiProTheme(editor);
     this.loadSettings();
+    this.mkeditor.onDidScrollChange(() => this.revealAutoScrollbars());
   }
 
   // ---------------------------------------------------------------------
@@ -112,7 +125,15 @@ export class SettingsProvider {
   }
 
   public setSettings(next: EditorSettings) {
-    this.currentSettings = { ...next };
+    this.currentSettings = {
+      ...next,
+      editorFontSize: this.sanitizeFontSize(next.editorFontSize, 14),
+      previewTextFontSize: this.sanitizeFontSize(next.previewTextFontSize, 16),
+      previewCodeFontSize: this.sanitizeFontSize(next.previewCodeFontSize, 14),
+      lineNumbersMinChars: this.sanitizeLineNumbersMinChars(
+        next.lineNumbersMinChars,
+      ),
+    };
     this.applyAll();
     this.emit();
   }
@@ -145,6 +166,14 @@ export class SettingsProvider {
     key: K,
     value: EditorSettings[K],
   ) {
+    if (
+      key === 'editorFontSize' ||
+      key === 'previewTextFontSize' ||
+      key === 'previewCodeFontSize'
+    ) {
+      const fallback = key === 'previewTextFontSize' ? 16 : 14;
+      value = this.sanitizeFontSize(value, fallback) as EditorSettings[K];
+    }
     this.currentSettings[key] = value;
     this.applyOne(key);
     this.emit();
@@ -157,20 +186,18 @@ export class SettingsProvider {
       autoindent: () => this.setAudoIndent(),
       darkmode: () => this.setTheme(),
       minimap: () => this.setMinimap(),
+      minimapMaxColumn: () => this.setMinimap(),
+      scrollbarVisibility: () => this.setScrollbarVisibility(),
       wordwrap: () => this.setWordWrap(),
       whitespace: () => this.setWhitespace(),
       systemtheme: () => this.setTheme(),
       // scrollsync has no editor option — checked at scroll time.
       locale: () => {
-        const resolved =
-          this.currentSettings.locale === 'system'
-            ? window.mked
-              ? (window.mked.getAppLocale?.() ?? 'en')
-              : navigator.language
-            : this.currentSettings.locale;
+        const resolved = resolveLocale(this.currentSettings.locale, this.mode);
         window.setLanguage(resolved);
       },
       editorFontFamily: () => this.setEditorFont(),
+      uiFontFamily: () => this.applyUiFont(),
       previewTextFontFamily: () => this.applyPreviewFonts(),
       previewCodeFontFamily: () => this.applyPreviewFonts(),
       editorZoom: () => this.setEditorZoom(),
@@ -195,9 +222,11 @@ export class SettingsProvider {
     this.setTheme()
       .setAudoIndent()
       .setMinimap()
+      .setScrollbarVisibility()
       .setWhitespace()
       .setWordWrap()
       .setSystemThemeOverride()
+      .applyUiFont()
       .setEditorFont()
       .setEditorZoom()
       .applyPreviewFonts()
@@ -251,10 +280,32 @@ export class SettingsProvider {
       // default rather than landing as `undefined` and breaking React
       // controls / the gate getter. Stored values still take precedence
       // for every key the user has actually customised.
-      this.currentSettings = { ...settings, ...parsed };
+      this.currentSettings = {
+        ...settings,
+        ...parsed,
+        editorFontSize: this.sanitizeFontSize(parsed.editorFontSize, 14),
+        previewTextFontSize: this.sanitizeFontSize(
+          parsed.previewTextFontSize,
+          16,
+        ),
+        previewCodeFontSize: this.sanitizeFontSize(
+          parsed.previewCodeFontSize,
+          14,
+        ),
+        lineNumbersMinChars: this.sanitizeLineNumbersMinChars(
+          parsed.lineNumbersMinChars,
+        ),
+      };
       // If the merge filled in any missing keys, persist the upgraded
       // shape so future loads don't repeat the work.
-      const upgraded = Object.keys(settings).some((k) => !(k in parsed));
+      const upgraded =
+        Object.keys(settings).some((k) => !(k in parsed)) ||
+        parsed.lineNumbersMinChars !==
+          this.currentSettings.lineNumbersMinChars ||
+        parsed.editorFontSize !== this.currentSettings.editorFontSize ||
+        parsed.previewTextFontSize !==
+          this.currentSettings.previewTextFontSize ||
+        parsed.previewCodeFontSize !== this.currentSettings.previewCodeFontSize;
       if (upgraded) this.updateSettingsInLocalStorage();
     } catch {
       this.setDefaultSettings();
@@ -296,7 +347,7 @@ export class SettingsProvider {
   public setTheme() {
     const effective = this.effectiveDarkmode();
     document.body.setAttribute('data-theme', effective ? 'dark' : 'light');
-    editor.setTheme(effective ? 'vs-dark' : 'vs');
+    editor.setTheme(effective ? MONOKAI_PRO_THEME_NAME : 'vs');
     return this;
   }
 
@@ -329,9 +380,41 @@ export class SettingsProvider {
 
   public setMinimap() {
     this.mkeditor.updateOptions({
-      minimap: { enabled: this.currentSettings.minimap },
+      minimap: minimapOptions(
+        this.currentSettings.minimap,
+        this.currentSettings.minimapMaxColumn,
+      ),
     });
     return this;
+  }
+
+  public setScrollbarVisibility() {
+    const visibility = this.currentSettings.scrollbarVisibility;
+    this.mkeditor.updateOptions(monacoScrollbarOptions(visibility));
+    const node = this.mkeditor.getDomNode();
+    if (node) {
+      node.dataset.scrollbarVisibility = visibility;
+      if (visibility !== 'auto') node.classList.remove('scrollbar-scrolling');
+    }
+    if (visibility !== 'auto' && this.scrollbarHideTimer !== null) {
+      window.clearTimeout(this.scrollbarHideTimer);
+      this.scrollbarHideTimer = null;
+    }
+    return this;
+  }
+
+  private revealAutoScrollbars() {
+    if (this.currentSettings.scrollbarVisibility !== 'auto') return;
+    const node = this.mkeditor.getDomNode();
+    if (!node) return;
+    node.classList.add('scrollbar-scrolling');
+    if (this.scrollbarHideTimer !== null) {
+      window.clearTimeout(this.scrollbarHideTimer);
+    }
+    this.scrollbarHideTimer = window.setTimeout(() => {
+      node.classList.remove('scrollbar-scrolling');
+      this.scrollbarHideTimer = null;
+    }, 1000);
   }
 
   public setWordWrap() {
@@ -359,6 +442,15 @@ export class SettingsProvider {
   // ---------------------------------------------------------------------
   // Font applicators
   // ---------------------------------------------------------------------
+
+  public applyUiFont() {
+    const value = this.currentSettings.uiFontFamily?.trim();
+    document.documentElement.style.setProperty(
+      '--mk-ui-font-family',
+      value || DEFAULT_UI_FONT_FAMILY,
+    );
+    return this;
+  }
 
   public setEditorFont() {
     const value = this.currentSettings.editorFontFamily?.trim();
@@ -396,12 +488,25 @@ export class SettingsProvider {
   }
 
   public setLineNumbersMinChars() {
-    const chars = this.currentSettings.lineNumbersMinChars ?? 5;
+    const chars = this.sanitizeLineNumbersMinChars(
+      this.currentSettings.lineNumbersMinChars,
+    );
+    this.currentSettings.lineNumbersMinChars = chars;
     this.mkeditor.updateOptions({
       lineNumbersMinChars: chars,
       lineDecorationsWidth: 0,
     });
     return this;
+  }
+
+  private sanitizeLineNumbersMinChars(raw: unknown): number {
+    if (typeof raw !== 'number' || !Number.isFinite(raw)) return 5;
+    return Math.min(10, Math.max(3, Math.round(raw)));
+  }
+
+  private sanitizeFontSize(raw: unknown, fallback: number): number {
+    if (typeof raw !== 'number' || !Number.isFinite(raw)) return fallback;
+    return Math.min(72, Math.max(9, Math.round(raw)));
   }
 
   // ---------------------------------------------------------------------

@@ -51,7 +51,9 @@ function loadReceiverWhitelist(): string[] {
 }
 
 function flatItems(): MenuItem[] {
-  return menuModel.flatMap((group) => group.items);
+  const flatten = (items: MenuItem[]): MenuItem[] =>
+    items.flatMap((item) => [item, ...(item.items ? flatten(item.items) : [])]);
+  return menuModel.flatMap((group) => flatten(group.items));
 }
 
 describe('menuModel structure', () => {
@@ -89,7 +91,7 @@ describe('menuModel actions', () => {
       // Items without an action exist in theory (separator-only rows etc.)
       // but the current model has none — flagging here keeps that
       // assumption explicit.
-      expect(item.action).toBeDefined();
+      expect(item.action ?? item.items).toBeDefined();
     },
   );
 

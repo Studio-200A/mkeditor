@@ -22,6 +22,7 @@ import LineNumber from '../extensions/renderer/LineNumber';
 import LinkTarget from '../extensions/renderer/LinkTarget';
 import ImageStyle from '../extensions/renderer/ImageStyle';
 import TableStyle from '../extensions/renderer/TableStyle';
+import Gfm from '../extensions/renderer/Gfm';
 
 import { logger } from '../util';
 
@@ -204,6 +205,7 @@ Markdown.use(LineNumber);
 Markdown.use(LinkTarget);
 Markdown.use(ImageStyle);
 Markdown.use(TableStyle);
+Markdown.use(Gfm);
 Markdown.use(MarkdownItKatex);
 
 /**

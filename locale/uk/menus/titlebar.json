@@ -20,6 +20,15 @@
   "edit.paste": "Вставити",
 
   "view.palette": "Відкрити палітру команд",
+  "view.layout": "Макет",
+  "view.layout.toolbar": "Показати панель інструментів",
+  "view.layout.tabs": "Показати панель вкладок",
+  "view.layout.sidebar": "Показати бічну панель провідника",
+  "view.layout.editor": "Показати редактор",
+  "view.layout.preview": "Показати попередній перегляд",
+  "view.layout.statusbar": "Показати рядок стану",
+  "view.layout.assistant": "Показати бічну панель ШІ-помічника",
+  "view.layout.reset": "Скинути макет",
   "view.fullscreen": "Перемкнути повноекранний режим",
   "view.devtools": "Перемкнути інструменти розробника",
 

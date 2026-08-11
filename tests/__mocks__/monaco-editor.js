@@ -6,6 +6,7 @@ const create = jest.fn((element, options) => {
     onDidScrollChange: jest.fn(),
     onKeyDown: jest.fn(),
     getVisibleRanges: jest.fn(() => [{ startLineNumber: 1, endLineNumber: 1 }]),
+    getDomNode: jest.fn(() => element),
     updateOptions: jest.fn(),
     addAction: jest.fn(),
     focus: jest.fn(),
@@ -13,6 +14,7 @@ const create = jest.fn((element, options) => {
 });
 
 const setTheme = jest.fn();
+const defineTheme = jest.fn();
 
 const languages = {
   registerCompletionItemProvider: jest.fn(() => ({ dispose: jest.fn() })),
@@ -42,4 +44,9 @@ const KeyCode = new Proxy(
   },
 );
 
-module.exports = { editor: { create, setTheme }, languages, KeyMod, KeyCode };
+module.exports = {
+  editor: { create, setTheme, defineTheme },
+  languages,
+  KeyMod,
+  KeyCode,
+};

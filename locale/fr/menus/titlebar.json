@@ -20,6 +20,15 @@
   "edit.paste": "Coller",
 
   "view.palette": "Ouvrir la palette de commandes",
+  "view.layout": "Disposition",
+  "view.layout.toolbar": "Afficher la barre d'outils",
+  "view.layout.tabs": "Afficher la barre d'onglets",
+  "view.layout.sidebar": "Afficher la barre latérale de l'explorateur",
+  "view.layout.editor": "Afficher l'éditeur",
+  "view.layout.preview": "Afficher l'aperçu",
+  "view.layout.statusbar": "Afficher la barre d'état",
+  "view.layout.assistant": "Afficher la barre latérale de l'assistant IA",
+  "view.layout.reset": "Réinitialiser la disposition",
   "view.fullscreen": "Basculer en plein écran",
   "view.devtools": "Basculer les outils de développement",
 

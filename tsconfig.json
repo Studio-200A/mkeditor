@@ -22,6 +22,6 @@
     "baseUrl": ".",
     "noUncheckedSideEffectImports": false
   },
-  "files": ["./@types/index.d.ts"],
+  "files": ["./@types/index.d.ts", "./@types/vendor.d.ts"],
   "include": ["src"]
 }

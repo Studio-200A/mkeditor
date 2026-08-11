@@ -20,6 +20,15 @@
   "edit.paste": "Yapıştır",
 
   "view.palette": "Komut Paletini Aç",
+  "view.layout": "Düzen",
+  "view.layout.toolbar": "Araç çubuğunu göster",
+  "view.layout.tabs": "Sekme çubuğunu göster",
+  "view.layout.sidebar": "Gezgin kenar çubuğunu göster",
+  "view.layout.editor": "Düzenleyiciyi göster",
+  "view.layout.preview": "Önizlemeyi göster",
+  "view.layout.statusbar": "Durum çubuğunu göster",
+  "view.layout.assistant": "Yapay zeka asistanı kenar çubuğunu göster",
+  "view.layout.reset": "Düzeni sıfırla",
   "view.fullscreen": "Tam Ekranı Değiştir",
   "view.devtools": "Geliştirici Araçlarını Değiştir",
 

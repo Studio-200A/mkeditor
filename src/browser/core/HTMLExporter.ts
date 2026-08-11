@@ -6,20 +6,12 @@ import type { ExportSettings } from '../interfaces/Editor';
 /**
  * External resources still pulled in via CDN when `withStyles` is on:
  *
- *  - highlight.js theme — provides the syntax-colour rules for the
- *    .hljs class names markdown-it stamps onto fenced code blocks.
  *  - KaTeX — required font + CSS for math rendering.
+ *
+ * highlight.js colours live in `markdownStylesheet`, keeping preview and
+ * exported code blocks on the same token map without a theme CDN.
  */
 const cdn = {
-  highlightjs: {
-    css: {
-      rel: 'stylesheet',
-      href: 'https://cdn.jsdelivr.net/npm/highlightjs-themes@1.0.0/github.css',
-      integrity: 'sha256-3Kq/Y3s2zLxBaWvXF4mw18pnAfq4mSlsi/J2sa9zvSE=',
-      crossorigin: 'anonymous',
-    },
-    js: null,
-  },
   katex: {
     css: {
       rel: 'stylesheet',
@@ -94,7 +86,7 @@ const codeblockCopyScript = `
 
 type ProviderKey = keyof typeof cdn;
 
-const providers: ProviderKey[] = ['highlightjs', 'katex'];
+const providers: ProviderKey[] = ['katex'];
 
 export class HTMLExporter {
   /**
@@ -115,7 +107,7 @@ export class HTMLExporter {
     );
 
     if (withStyles) {
-      // Pull in the external CSS/JS for syntax highlighting + math.
+      // Pull in the external CSS/JS required for math.
       for (const provides of providers) {
         const { css, js } = cdn[provides];
 

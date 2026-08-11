@@ -2,7 +2,7 @@
 
 Phased plan for replacing the native window chrome on Windows/Linux with an in-window VSCode-style title bar that hosts the app logo, menu (File / Edit / View / Help), and native window controls — while leaving the native menu bar intact on macOS. The high-level entry in [ROADMAP.md](ROADMAP.md) links here.
 
-Read first: [../CLAUDE.md](../CLAUDE.md), [ARCHITECTURE.md](ARCHITECTURE.md).
+Read first: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Decisions
 

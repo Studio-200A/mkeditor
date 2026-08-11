@@ -3,6 +3,7 @@ import type { ContextBridgeAPI } from '../interfaces/Bridge';
 import type { File, FileProperties, RenamedPath } from '../interfaces/File';
 import type { BridgeProviders } from '../interfaces/Providers';
 import type { SettingsFile } from '../interfaces/Editor';
+import { minimapOptions, monacoScrollbarOptions } from '../config';
 import type { SessionRestoreEnvelope } from '../interfaces/Session';
 import type {
   ChatChunkEvent,
@@ -31,6 +32,13 @@ import {
   applyRestoredSidebarOpen,
   setSidebarOpenExternal,
 } from '../assistantUiState';
+import {
+  DEFAULT_LAYOUT_VISIBILITY,
+  applyRestoredLayoutState,
+  resetLayoutExternal,
+  setLayoutPartExternal,
+  type LayoutPart,
+} from '../layoutUiState';
 import { sonnerToast } from '../notify';
 import { showPropertiesExternal } from '../react/contexts/PropertiesContext';
 import { basename } from '../util';
@@ -80,8 +88,12 @@ export function registerBridgeListeners(
     });
 
     mkeditor.updateOptions({
-      minimap: { enabled: settings.minimap },
+      minimap: minimapOptions(settings.minimap, settings.minimapMaxColumn),
     });
+
+    mkeditor.updateOptions(
+      monacoScrollbarOptions(settings.scrollbarVisibility),
+    );
   };
 
   // Apply the OS theme pushed from main.
@@ -293,6 +305,9 @@ export function registerBridgeListeners(
     if (envelope?.session?.sidebarOpen !== undefined) {
       applyRestoredSidebarOpen(envelope.session.sidebarOpen);
     }
+    if (envelope?.session?.layout) {
+      applyRestoredLayoutState(envelope.session.layout);
+    }
     sessionRestored = true;
     notifyRendererReady();
   });
@@ -308,13 +323,30 @@ export function registerBridgeListeners(
   // icon reads this through WindowContext via BridgeManager's snapshot.
   bridge.receive(
     'from:window:state',
-    (state: { isMaximized: boolean } | undefined) => {
-      manager.setWindowState({ isMaximized: !!state?.isMaximized });
+    (state: { isMaximized: boolean; isFullScreen?: boolean } | undefined) => {
+      manager.setWindowState({
+        isMaximized: !!state?.isMaximized,
+        isFullScreen: !!state?.isFullScreen,
+      });
       // Persist the window state to session.json so isMaximized is
       // restored on next launch alongside sidebarOpen.
       files.scheduleSessionSave();
     },
   );
+
+  bridge.receive(
+    'from:layout:set',
+    (payload: { part?: LayoutPart; visible?: boolean } | undefined) => {
+      if (
+        payload?.part &&
+        payload.part in DEFAULT_LAYOUT_VISIBILITY &&
+        typeof payload.visible === 'boolean'
+      ) {
+        setLayoutPartExternal(payload.part, payload.visible);
+      }
+    },
+  );
+  bridge.receive('from:layout:reset', () => resetLayoutExternal());
 
   // ---- AI Assistant ----------------------------------------------
   //

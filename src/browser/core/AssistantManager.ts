@@ -150,7 +150,7 @@ const EMPTY_CHAT_SNAPSHOT: AssistantChatSnapshot = {
  * config-only consumers don't re-render on chat churn (chunks
  * arrive multiple times per second during streaming).
  *
- * Architectural responsibilities (CLAUDE.md): owns data + IPC;
+ * Architectural responsibilities: owns data + IPC;
  * never imports React. The composition root injects the bridge
  * ref through the constructor.
  */

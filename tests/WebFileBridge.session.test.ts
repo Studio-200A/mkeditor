@@ -364,4 +364,33 @@ describe('WebFileBridge to:session:clear', () => {
     expect(notifications).toHaveLength(1);
     expect(notifications[0].key).toBe('notifications:session_cleared');
   });
+
+  it('keeps tabs cleared when later state writes recreate the session key', async () => {
+    const bridge = await loadBridge();
+    bridge.send('to:session:clear', null);
+    bridge.send('to:session:save', {
+      version: 4,
+      tabs: [{ path: 'untitled-1', name: 'Untitled 1', viewState: null }],
+      activeFile: 'untitled-1',
+      workspaceRoot: '/notes',
+      layout: {
+        toolbar: true,
+        tabBar: true,
+        sidebar: false,
+        editor: true,
+        preview: true,
+        statusBar: true,
+        assistant: false,
+      },
+    });
+
+    expect(JSON.parse(localStorage.getItem('mkeditor-session')!)).toMatchObject(
+      {
+        tabs: [],
+        activeFile: null,
+        workspaceRoot: null,
+        layout: { sidebar: false },
+      },
+    );
+  });
 });

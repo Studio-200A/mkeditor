@@ -28,30 +28,26 @@ export type MenuRole =
   | 'quit';
 
 export type MenuAction =
-  /** Send a `from:*` channel from main to renderer (used by the macOS
-   *  native menu). On Windows/Linux in P2 the renderer's in-window menu
-   *  will dispatch the same channel name through its own BridgeListener
-   *  surface. */
+  /** Send a `from:*` channel from main to renderer. The in-window menu
+   *  dispatches the same action through its renderer bridge. */
   | { kind: 'channel'; channel: string; payload?: unknown }
   /** Use Electron's built-in role. The Electron menu honours the OS's
    *  default label (e.g. "Exit" on Windows for `quit`). */
   | { kind: 'role'; role: MenuRole }
   /** Run a main-process command by id (e.g. open the log file, toggle
-   *  DevTools). Handlers live in `AppMenu` for macOS today; P2 adds a
-   *  `to:command:run` IPC so the renderer menu can reach them. */
+   *  DevTools). Renderer menus reach the same handlers through IPC. */
   | { kind: 'command'; commandId: string };
 
 export interface MenuItem {
   /** Stable id for tests, keyboard nav, and the i18n key (`menu.<id>`). */
   id: string;
-  /** English label. The renderer translates via `t(\`menu.\${id}\`)` once
-   *  i18n is wired in P2 and falls back to this string. For `role` actions
+  /** English label. The renderer translates by id and falls back to this
+   *  string. For `role` actions
    *  `AppMenu` deliberately omits this — Electron picks the OS default. */
   label: string;
   /** Default Electron accelerator string. Use the `CmdOrCtrl+` modifier
    *  to mean Cmd on macOS and Ctrl elsewhere — Electron resolves it at
-   *  runtime, and the renderer reads the same syntax in P2 (where we'll
-   *  expand it using the runtime `mode` flag from `Managers`). */
+   *  runtime, and the renderer formats the same syntax for display. */
   accelerator?: string;
   /** Overrides `accelerator` on macOS. Use only when the platforms can't
    *  share a single `CmdOrCtrl+` expression (e.g. DevTools, where macOS
@@ -61,6 +57,17 @@ export interface MenuItem {
   action?: MenuAction;
   /** Render a separator above this item. */
   separatorBefore?: boolean;
+  /** Nested submenu entries. A submenu item has no direct action. */
+  items?: MenuItem[];
+  /** Marks a checkbox that controls one persisted layout region. */
+  layoutPart?:
+    | 'toolbar'
+    | 'tabBar'
+    | 'sidebar'
+    | 'editor'
+    | 'preview'
+    | 'statusBar'
+    | 'assistant';
 }
 
 export interface MenuGroup {
@@ -197,24 +204,68 @@ export const menuModel: MenuModel = [
         },
       },
       {
+        id: 'view.layout',
+        label: 'Layout',
+        separatorBefore: true,
+        items: [
+          {
+            id: 'view.layout.toolbar',
+            label: 'Show Toolbar',
+            layoutPart: 'toolbar',
+            action: { kind: 'channel', channel: 'from:layout:set' },
+          },
+          {
+            id: 'view.layout.tabs',
+            label: 'Show Tab Bar',
+            layoutPart: 'tabBar',
+            action: { kind: 'channel', channel: 'from:layout:set' },
+          },
+          {
+            id: 'view.layout.sidebar',
+            label: 'Show Explorer Sidebar',
+            layoutPart: 'sidebar',
+            action: { kind: 'channel', channel: 'from:layout:set' },
+          },
+          {
+            id: 'view.layout.editor',
+            label: 'Show Editor',
+            layoutPart: 'editor',
+            separatorBefore: true,
+            action: { kind: 'channel', channel: 'from:layout:set' },
+          },
+          {
+            id: 'view.layout.preview',
+            label: 'Show Preview',
+            layoutPart: 'preview',
+            action: { kind: 'channel', channel: 'from:layout:set' },
+          },
+          {
+            id: 'view.layout.statusbar',
+            label: 'Show Status Bar',
+            layoutPart: 'statusBar',
+            separatorBefore: true,
+            action: { kind: 'channel', channel: 'from:layout:set' },
+          },
+          {
+            id: 'view.layout.assistant',
+            label: 'Show AI Assistant Sidebar',
+            layoutPart: 'assistant',
+            accelerator: 'CmdOrCtrl+Shift+A',
+            action: { kind: 'channel', channel: 'from:layout:set' },
+          },
+          {
+            id: 'view.layout.reset',
+            label: 'Reset Layout',
+            separatorBefore: true,
+            action: { kind: 'channel', channel: 'from:layout:reset' },
+          },
+        ],
+      },
+      {
         id: 'view.fullscreen',
         label: 'Toggle Full Screen',
         separatorBefore: true,
         action: { kind: 'role', role: 'togglefullscreen' },
-      },
-      {
-        id: 'view.assistant.toggle',
-        label: 'Toggle Assistant Sidebar',
-        accelerator: 'CmdOrCtrl+Shift+A',
-        separatorBefore: true,
-        // Desktop-only. The in-window `<TitleBar>` menu skips this
-        // entry on web (and main never builds an Electron menu
-        // there anyway). Channel routes through BridgeListeners →
-        // UIStateContext.
-        action: {
-          kind: 'channel',
-          channel: 'from:assistant:toggle',
-        },
       },
       {
         id: 'view.devtools',

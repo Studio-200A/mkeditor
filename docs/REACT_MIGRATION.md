@@ -2,7 +2,7 @@
 
 Phased plan for migrating MKEditor's renderer chrome from direct-DOM/Bootstrap to React 19 + shadcn/ui. This document is the source of truth for the migration; the high-level entry in [ROADMAP.md](ROADMAP.md) links here.
 
-Read first: [../CLAUDE.md](../CLAUDE.md), [ARCHITECTURE.md](ARCHITECTURE.md).
+Read first: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Decisions
 
@@ -45,7 +45,7 @@ src/browser/
 │   │   └── FileTreeContext.tsx    reactive view of FileTreeManager tree
 │   ├── hooks/
 │   │   ├── useTranslation.ts      thin wrapper over i18next + languageChanged
-│   │   ├── useNotify.ts           toast emitter (sonner)
+│   │   ├── notify.ts              neutral sonner toast seam
 │   │   ├── useConfirm.ts          prompt dialog helper
 │   │   ├── useTheme.ts            data-theme + Monaco theme sync
 │   │   └── useDispatcher.ts       subscribe to EditorDispatcher events
@@ -307,7 +307,7 @@ A phase is **complete** only when its exit criteria are met _and_ `npm test`, `n
 **Tasks**:
 
 1. Add `<Toaster />` from `sonner` at the root of `<App>`.
-2. Replace [notify.send](../src/browser/util.ts:182) with a `useNotify()` hook that calls `sonner.toast.<level>()`. Update [BridgeListeners.notification handler](../src/browser/core/BridgeListeners.ts:238) to use the new emitter (or expose `notify` outside React as `sonnerToast` for non-component callers).
+2. Replace [notify.send](../src/browser/util.ts:182) with the neutral `sonnerToast` emitter used by React and non-React callers. Update the BridgeListeners notification handler to use the same seam.
 3. Replace SweetAlert2 prompts in [explorerContextMenu.ts](../src/browser/core/mappings/explorerContextMenu.ts) with a `useConfirm()` / `usePrompt()` hook that opens a shadcn `AlertDialog`/`Dialog`. The context-menu items become React handlers that call hooks.
 4. Replace `closeTab` unsaved-changes confirmation in [FileManager.closeTab](../src/browser/core/FileManager.ts:102-134) with the same hook — but since FileManager is non-React, expose a registered `confirmCloseTab` function on the manager that React installs at mount time.
 5. Replace [showFilePropertiesWindow](../src/browser/dom.ts:261) with a `<PropertiesModal>` (deferred from Phase 7 if needed).
@@ -373,7 +373,7 @@ A phase is **complete** only when its exit criteria are met _and_ `npm test`, `n
    - Add a React layer section with the component tree and context map.
    - Note that managers retained their roles; only the view layer changed.
 4. Update [src/browser/README.md](../src/browser/README.md) to reflect new structure.
-5. Update [CLAUDE.md](../CLAUDE.md): rewrite "Conventions" + "Renderer Composition Root" sections.
+5. Update [ARCHITECTURE.md](ARCHITECTURE.md): rewrite conventions and renderer composition sections.
 6. Update [ROADMAP.md](ROADMAP.md): mark React migration 🟢 with date; open §4 (post-React opportunities).
 
 **Exit criteria**:
@@ -408,50 +408,6 @@ A phase is **complete** only when its exit criteria are met _and_ `npm test`, `n
 - Changing the IPC channel surface (the [preload.ts](../src/app/preload.ts) whitelists are stable).
 - Adding a DI container (constructor injection is sufficient; see [ROADMAP.md §2](ROADMAP.md#2-dependency-wiring--di-cleanup)).
 
-## Workflow (Slash Commands + Agents)
-
-This migration is executed via project-scoped slash commands backed by custom agents. Definitions live in [`.claude/commands/`](../.claude/commands/) and [`.claude/agents/`](../.claude/agents/).
-
-### Commands
-
-| Command               | Purpose                                                                                                                                                                                                                                                          |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/migrate-status`     | Show the Phase Index, identify the next phase to execute, surface any blockers.                                                                                                                                                                                  |
-| `/migrate-phase <N>`  | Execute phase N end-to-end: plan tasks via TodoWrite → implement (with parallel sub-agents where independent) → auto-run all three reviewers in parallel → synthesise → request commit approval. Never commits or updates status without explicit user approval. |
-| `/migrate-review <N>` | Standalone parallel review of phase N's diff. Use for mid-phase checkpoints, after manual edits, or to re-check after fixes. Read-only.                                                                                                                          |
-
-### Agents
-
-| Agent                        | Type       | Role                                                                                                                                                                                                                                  |
-| ---------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `react-phase-executor`       | read+write | Implements one parallelisable slice of a phase. Used only when sub-tasks have strictly non-overlapping file ownership. Sequential work and shared infra (tsconfig, webpack, package.json, composition root) stay in the main session. |
-| `react-phase-reviewer`       | read-only  | Verifies exit criteria, task completeness, out-of-scope adherence, scope creep.                                                                                                                                                       |
-| `react-architecture-auditor` | read-only  | Verifies architectural rules: manager/React separation, no rogue DOM queries, no reintroduced legacy deps, no extra state libs, single Monaco instance, i18n discipline, stack discipline.                                            |
-| `react-test-auditor`         | read-only  | Verifies test coverage for new components/hooks, runs lint + tsc + jest, reports gaps.                                                                                                                                                |
-
-The three reviewers always run **in parallel** (a single message with three `Agent` tool calls) — they each have an independent cold context, so they don't share findings and don't waste tokens re-reading the same diff sequentially.
-
-### Review cadence
-
-- **End-of-phase**: automatic. Built into `/migrate-phase`.
-- **Mid-phase**: on-demand via `/migrate-review N`. Not automatic — would burn tokens without strong signal.
-- **Per-task**: not run. Trust the architecture rules to be caught at end-of-phase or on demand.
-
-### Typical loop
-
-```
-/migrate-status                          → identify next phase (say, 3)
-git checkout -b feature/react-phase-3-preview-workspace
-/migrate-phase 3
-  ↳ plan → implement → reviewers run in parallel → report
-  ↳ address concerns (re-run /migrate-review 3 to verify)
-  ↳ approve commit when ready
-  ↳ status updates to 🟢 in Phase Index
-/migrate-status                          → confirm; identify Phase 4
-```
-
-If a phase reveals a planning gap, **stop, surface the question, update this doc, then resume** — never work around the plan silently.
-
 ## Branching & Commits
 
 - Branch per phase: `feature/react-phase-<N>-<slug>`.
@@ -461,14 +417,14 @@ If a phase reveals a planning gap, **stop, surface the question, update this doc
 
 ## Executing a Phase (manual fallback)
 
-Normally phases run via `/migrate-phase <N>` (see **Workflow** above). If you're executing manually:
+The migration-specific automation was removed after completion. To execute a historical phase manually:
 
 1. Re-read **Decisions** and the relevant phase section.
 2. Re-read the corresponding code paths in [ARCHITECTURE.md](ARCHITECTURE.md).
 3. Branch: `feature/react-phase-<N>-<slug>` off `main`.
 4. Implement tasks in listed order. Don't skip ahead.
 5. Verify exit criteria.
-6. Run `/migrate-review <N>` to dispatch the three reviewers, or smoke test + `npm test` + `npm run lint` manually.
+6. Run the relevant smoke test, `npm test`, `npm run lint`, and `npx tsc --noEmit`.
 7. Commit, open PR, and update the phase row's status emoji to 🟢 after merge.
 
 If a phase reveals an assumption that's wrong, **stop and revise this plan first** rather than working around it.

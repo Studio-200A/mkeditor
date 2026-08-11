@@ -20,6 +20,15 @@
   "edit.paste": "粘贴",
 
   "view.palette": "打开命令面板",
+  "view.layout": "布局",
+  "view.layout.toolbar": "显示工具栏",
+  "view.layout.tabs": "显示标签栏",
+  "view.layout.sidebar": "显示资源管理器侧边栏",
+  "view.layout.editor": "显示编辑区",
+  "view.layout.preview": "显示预览区",
+  "view.layout.statusbar": "显示状态栏",
+  "view.layout.assistant": "显示 AI 助手侧边栏",
+  "view.layout.reset": "重置布局",
   "view.fullscreen": "切换全屏",
   "view.devtools": "切换开发人员工具",
 

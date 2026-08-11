@@ -9,11 +9,10 @@ For the full architecture see [docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md)
 Top-level seam files at `src/browser/`:
 
 - `index.ts` — composition root. Constructs the dispatcher + `EditorManager`, mounts `<App>` synchronously into `#react-root`, then wires providers + (desktop) `BridgeManager` in `onEditorReady`.
-- `i18n.ts` — i18next bundle loader + the (now tiny) `data-i18n-*` walker for the splash `<h1>`.
+- `i18n.ts` — i18next bundle loader and locale resolution.
 - `icons.ts` — FontAwesome icon registry.
 - `dom.ts` — small constant map (`editor.dom`, `preview.dom`, `preview.wrapper`, `meta.scroll`) for non-React consumers (`HTMLExporter`, `ScrollSync`, `LineNumber`).
 - `notify.ts` — `sonnerToast(level, msg)` neutral seam shared by React + non-React callers.
-- `splash.ts` — boot-time splash fade-out.
 - `util.ts` — debounce, `getExecutionBridge`, `syncPreviewToExportSettings`.
 - `config.ts` — default `EditorSettings` + `ExportSettings`.
 - `version.ts` — build-generated.
@@ -30,12 +29,12 @@ Subfolders:
 - `react/` — the React UI tree (function components, React 19).
   - `App.tsx` — providers + chrome + modals + sonner Toaster.
   - `contexts/` — one context per reactive concern (`Settings`, `ExportSettings`, `Files`, `FileTree`, `Modals`, `Prompts`, `Properties`, `UIState`, `Managers`). Each wraps a manager via `useSyncExternalStore`.
-  - `hooks/` — `useTranslation`, `useCounts`, `useNotify`.
-  - `components/` — `Navbar`, `TabBar`, `Sidebar`, `FileTreePanel`, `Workspace`, `EditorHost`, `EditorToolbar`, `PreviewPane`, `BottomToolbarRight`, `Icon`, and `modals/*`.
+  - `hooks/` — `useTranslation`, `useCounts`.
+  - `components/` — `Navbar`, `TabBar`, `Sidebar`, `FileTreePanel`, `Workspace`, `EditorHost`, `EditorToolbar`, `PreviewPane`, `Icon`, and `modals/*`.
   - `components/ui/` — shadcn copy-in primitives (`Dialog`, `ContextMenu`, `DropdownMenu`, `Popover`, `Tooltip`, `Switch`, `Select`, `Checkbox`, `Input`, `Label`, `Button`) — thin Radix wrappers using Tailwind theme tokens.
   - `styles/tailwind.css` — Tailwind v4 entry + theme tokens (light + `[data-theme='dark']`).
 - `assets/` — SCSS partials (`_base`, `_editor`, `_preview`, `_sidebar`, `_tabs`, `_darkmode`) + `intro.ts` (welcome markdown).
-- `views/index.html` — minimal shell: splash overlay, `#react-root` mount, bottom `<nav>` with the `#editor-functions` and `#bottom-toolbar-right` portal hosts. All Tailwind-styled.
+- `views/index.html` — minimal shell containing the `#react-root` mount.
 
 ## Manager / React separation
 
@@ -70,7 +69,7 @@ Renderer perspective of bridge channels:
 - `scripts/combine-locales.mjs` produces a per-language `all.json` at build time. At runtime, the loader prefers the combined bundle and falls back to per-namespace fetches; missing namespaces are supplemented dynamically; English fallbacks are ensured for `notifications`.
 - Usage from React: `const { t } = useTranslation(); t('navbar:settings_tooltip')`. The hook subscribes to i18next's `languageChanged` event so consuming components re-render on locale change.
 - Usage from non-React: `import { t } from '../i18n'`.
-- Legacy attribute-driven binding (`data-i18n-text` / `-title` / `-placeholder`) remains for the splash `<h1>` only — every other label translates through React.
+- Legacy attribute-driven binding (`data-i18n-text` / `-title` / `-placeholder`) remains available for static HTML; application labels translate through React.
 
 ## Build & Run
 
@@ -81,8 +80,7 @@ Renderer perspective of bridge channels:
 ## Lifecycle Highlights
 
 1. `icons.ts` registers FontAwesome glyphs.
-2. `initI18n(mode)` builds the (tiny) splash binding, prefetches the combined locale bundle, initialises i18next, applies translations, sets `<html lang>`.
+2. `initI18n(mode)` prefetches the combined locale bundle, initialises i18next, applies translations, and sets `<html lang>`.
 3. `new EditorDispatcher` + `new EditorManager({mode, dispatcher})` — Monaco is **not** created yet; that's `<EditorHost>`'s job inside React.
 4. `createRoot(#react-root).render(<App initialManagers onEditorReady />)` mounts the full provider tree synchronously, including the `<ModalsBridge>` / `<PromptsBridge>` / `<PropertiesBridge>` sentinels that install the module-level seams.
 5. `<EditorHost>`'s `useEffect` runs once: calls `editorManager.create({mount, watch:true})`, then `onReady()` triggers `index.ts.onEditorReady` which attaches providers + (desktop) constructs `BridgeManager`, wires `setPersistHandler` callbacks, and pushes the new managers back into React state.
-6. `showSplashScreen({duration:750})` fades the splash overlay + bottom `<nav>` in.

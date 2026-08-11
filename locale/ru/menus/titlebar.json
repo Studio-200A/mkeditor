@@ -20,6 +20,15 @@
   "edit.paste": "Вставить",
 
   "view.palette": "Открыть палитру команд",
+  "view.layout": "Макет",
+  "view.layout.toolbar": "Показать панель инструментов",
+  "view.layout.tabs": "Показать панель вкладок",
+  "view.layout.sidebar": "Показать боковую панель проводника",
+  "view.layout.editor": "Показать редактор",
+  "view.layout.preview": "Показать предпросмотр",
+  "view.layout.statusbar": "Показать строку состояния",
+  "view.layout.assistant": "Показать боковую панель ИИ-помощника",
+  "view.layout.reset": "Сбросить макет",
   "view.fullscreen": "Переключить полноэкранный режим",
   "view.devtools": "Переключить инструменты разработчика",
 

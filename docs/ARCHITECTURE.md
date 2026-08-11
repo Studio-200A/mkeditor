@@ -1,6 +1,6 @@
 # MKEditor — Architecture
 
-This document describes how MKEditor is put together internally: how the two execution contexts (Electron main + renderer) interact, what each subsystem owns, and the data flows for the main user journeys (boot, edit/preview, save, open, export, settings change, language change). For a quick orientation see [CLAUDE.md](../CLAUDE.md); for build/run see [CONTRIBUTING.md](../CONTRIBUTING.md).
+This document describes how MKEditor is put together internally: how the two execution contexts (Electron main + renderer) interact, what each subsystem owns, and the data flows for the main user journeys (boot, edit/preview, save, open, export, settings change, language change). For build/run instructions see [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 ## 1. High-Level Picture
 
@@ -102,13 +102,12 @@ The renderer has two halves: the **managers** (data + IPC, no React) under `src/
 src/browser/
 ├── index.ts                       composition root — mounts <App>, constructs managers,
 │                                  wires the persist-handler callbacks
-├── i18n.ts                        i18next bundle loader + data-i18n walker (splash only)
+├── i18n.ts                        i18next bundle loader + locale resolution
 ├── icons.ts                       FontAwesome registry
 ├── dom.ts                         small constant map (editor / preview / scroll meta) used by
 │                                  non-React modules (HTMLExporter, ScrollSync, LineNumber)
 ├── notify.ts                      sonnerToast(level, msg) — neutral seam shared by React +
 │                                  non-React callers (BridgeListeners)
-├── splash.ts                      showSplashScreen + fade helpers (boot-time)
 ├── menuDispatch.ts                dispatchMenuActionExternal / registerMenuActionDispatcher
 │                                  — module-level seam from <TitleBar> into App.tsx's
 │                                  resolver (mirrors openModalExternal pattern)
@@ -116,9 +115,7 @@ src/browser/
 ├── config.ts                      default EditorSettings + ExportSettings
 ├── version.ts                     generated at build from package.json
 │
-├── views/index.html               minimal shell: splash overlay, #react-root mount, bottom
-│                                  <nav> with #editor-functions and #bottom-toolbar-right
-│                                  portal hosts. All Tailwind-styled.
+├── views/index.html               minimal shell with the #react-root mount
 ├── assets/                        SCSS partials (base, editor, preview, sidebar, tabs,
 │                                  darkmode) + intro.ts (welcome markdown)
 │
@@ -163,8 +160,7 @@ src/browser/
     ├── styles/tailwind.css        @tailwind + theme tokens (light + [data-theme='dark'])
     ├── hooks/
     │   ├── useTranslation.ts      thin i18next.on('languageChanged') wrapper
-    │   ├── useCounts.ts           word/character count from editor:render
-    │   └── useNotify.ts           re-exports sonnerToast from src/browser/notify.ts
+    │   └── useCounts.ts           word/character count from editor:render
     ├── contexts/
     │   ├── ManagersContext.tsx    provides editor / file / tree / bridge / providers
     │   ├── SettingsContext.tsx    useSyncExternalStore over SettingsProvider
@@ -191,8 +187,8 @@ src/browser/
     │   │                          web renders logo + menus only.
     │   ├── TitleBar.menu.tsx      one Radix DropdownMenu per MenuGroup; items dispatch
     │   │                          through `dispatchMenuActionExternal` (menuDispatch.ts).
-    │   ├── Navbar.tsx             second-row chrome (sidebar toggle, file name, counts,
-    │   │                          cog, help) — shadcn Tooltip for icon hints
+    │   ├── Navbar.tsx             bottom status bar (file name, counts, settings, theme,
+    │   │                          assistant, version/about)
     │   ├── TabBar.tsx             native HTML5 DnD reorder; close button → FileManager
     │   ├── Sidebar.tsx, FileTreePanel.tsx     file explorer
     │   ├── Workspace.tsx          react-resizable-panels editor/preview split
@@ -201,7 +197,6 @@ src/browser/
     │   │                          alert/code/tables Popovers
     │   ├── PreviewPane.tsx        subscribes to editor:render; writes Markdown.render
     │   │                          into #preview-content innerHTML
-    │   ├── BottomToolbarRight.tsx darkmode shadcn Switch + build chip → AboutModal
     │   ├── Icon.tsx               FontAwesome SVG wrapper (no MutationObserver)
     │   ├── modals/
     │   │   ├── SettingsModal.tsx       shadcn Switch/Select/Checkbox/Input
@@ -677,7 +672,7 @@ Mocks in [tests/**mocks**/](../tests/__mocks__/) stand in for `electron`, `monac
 
 ## 9. Notable Conventions and Gotchas
 
-- **Managers own data + IPC. React owns UI + presentation.** Managers under [core/](../src/browser/core/) and the seam files at [src/browser/](../src/browser/) (`dom.ts`, `notify.ts`, `splash.ts`, `util.ts`, `i18n.ts`) do not import React or Radix. React components under [react/](../src/browser/react/) do not import `ipcRenderer` or read `localStorage` directly.
+- **Managers own data + IPC. React owns UI + presentation.** Managers under [core/](../src/browser/core/) and the seam files at [src/browser/](../src/browser/) (`dom.ts`, `notify.ts`, `util.ts`, `i18n.ts`) do not import React or Radix. React components under [react/](../src/browser/react/) do not import `ipcRenderer` or read `localStorage` directly.
 - **Cross-boundary seams.** Non-React callers reach the React tree through module-level `*External` functions registered by sentinel components inside `<App>`. Adding a new seam = define a `let externalFn` in the owning context, export a `register*` setter, install it from a `<Bridge>` component during the React mount.
 - **Reactive provider surface.** Any state that React needs to render is exposed by its owning manager as `subscribe(listener) → unsubscribe` + `getSnapshot()` (returning a stable reference between emits). React contexts pull through `useSyncExternalStore`. Don't add fields directly to React state if a manager already owns them.
 - **Single Monaco instance.** Only [EditorManager.create](../src/browser/core/EditorManager.ts) calls `editor.create(...)`; `<EditorHost>`'s `useEffect` has `[]` deps so it never re-mounts. If you find yourself needing a second Monaco instance, you almost certainly want a model swap instead.

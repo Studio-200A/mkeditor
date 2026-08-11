@@ -345,7 +345,7 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
     // mentions the provider's published context window; we don't
     // ship per-provider limits in v1 — 32k is a safe shared floor
     // that flags clearly-large prompts without spamming for normal use.
-    tokenEstimate > 32000 && 'text-amber-600 dark:text-amber-400 font-medium',
+    tokenEstimate > 32000 && 'text-warning font-medium',
   );
 
   return (

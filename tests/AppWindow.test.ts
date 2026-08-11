@@ -186,6 +186,7 @@ describe('AppWindow', () => {
     win.fireEvent('maximize');
     expect(win.webContents.send).toHaveBeenCalledWith('from:window:state', {
       isMaximized: true,
+      isFullScreen: false,
     });
   });
 
@@ -195,6 +196,18 @@ describe('AppWindow', () => {
     win.fireEvent('unmaximize');
     expect(win.webContents.send).toHaveBeenCalledWith('from:window:state', {
       isMaximized: false,
+      isFullScreen: false,
+    });
+  });
+
+  it('emits true fullscreen state independently of maximization', () => {
+    const win = makeMockWindow();
+    win.isFullScreen.mockReturnValue(true);
+    new AppWindow(win as never, true);
+    win.fireEvent('enter-full-screen');
+    expect(win.webContents.send).toHaveBeenCalledWith('from:window:state', {
+      isMaximized: false,
+      isFullScreen: true,
     });
   });
 
@@ -217,6 +230,7 @@ describe('AppWindow', () => {
     win.fireWebContentsOnce('did-finish-load');
     expect(win.webContents.send).toHaveBeenCalledWith('from:window:state', {
       isMaximized: true,
+      isFullScreen: false,
     });
   });
 

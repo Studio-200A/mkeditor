@@ -20,6 +20,15 @@
   "edit.paste": "Incolla",
 
   "view.palette": "Apri palette dei comandi",
+  "view.layout": "Layout",
+  "view.layout.toolbar": "Mostra barra degli strumenti",
+  "view.layout.tabs": "Mostra barra delle schede",
+  "view.layout.sidebar": "Mostra barra laterale Esplora risorse",
+  "view.layout.editor": "Mostra editor",
+  "view.layout.preview": "Mostra anteprima",
+  "view.layout.statusbar": "Mostra barra di stato",
+  "view.layout.assistant": "Mostra barra laterale assistente IA",
+  "view.layout.reset": "Reimposta layout",
   "view.fullscreen": "Attiva/Disattiva schermo intero",
   "view.devtools": "Attiva/Disattiva strumenti di sviluppo",
 

@@ -4,6 +4,10 @@ let EditorDispatcher: any;
 let SettingsProvider: any;
 let CompletionProvider: any;
 
+import { editor as monacoEditor } from 'monaco-editor';
+import { minimapOptions } from '../src/browser/config';
+import { MONOKAI_PRO_THEME_NAME } from '../src/browser/themes/monokaiPro';
+
 jest.mock('../src/browser/assets/intro', () => ({
   welcomeMarkdown: '# Welcome',
 }));
@@ -51,6 +55,23 @@ describe('Providers', () => {
     expect(bridge.providers.settings).toBe(settings);
     expect(bridge.providers.completion).toBe(completion);
   });
+});
+
+describe('minimapOptions', () => {
+  it.each([
+    [80, 1, 80],
+    [180, 2, 90],
+    [260, 3, 87],
+  ])(
+    'maps %i px to Monaco scale %i and max column %i',
+    (width, scale, maxColumn) => {
+      expect(minimapOptions(true, width)).toEqual({
+        enabled: true,
+        scale,
+        maxColumn,
+      });
+    },
+  );
 });
 
 describe('SettingsProvider.loadSettingsFromLocalStorage (web)', () => {
@@ -104,6 +125,9 @@ describe('SettingsProvider.loadSettingsFromLocalStorage (web)', () => {
     expect(provider.getSetting('editorFontFamily')).toBe(
       "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
     );
+    expect(provider.getSetting('uiFontFamily')).toBe(
+      "'Nunito Sans', 'Open Sans', 'Lato', sans-serif",
+    );
     expect(provider.getSetting('uiZoom')).toBe(100);
     expect(provider.getSetting('editorZoom')).toBe(100);
     expect(provider.getSetting('previewZoom')).toBe(100);
@@ -111,6 +135,8 @@ describe('SettingsProvider.loadSettingsFromLocalStorage (web)', () => {
     expect(provider.getSetting('previewTextFontSize')).toBe(16);
     expect(provider.getSetting('previewCodeFontSize')).toBe(14);
     expect(provider.getSetting('lineNumbersMinChars')).toBe(5);
+    expect(provider.getSetting('minimapMaxColumn')).toBe(120);
+    expect(provider.getSetting('scrollbarVisibility')).toBe('auto');
 
     // The merged shape was persisted back so subsequent loads are
     // consistent (sessionRestore now present in storage).
@@ -121,6 +147,79 @@ describe('SettingsProvider.loadSettingsFromLocalStorage (web)', () => {
     expect(upgraded.autoindent).toBe(true);
     expect(upgraded.fileExplorer).toEqual({ extensions: ['md'] });
     expect(upgraded.pasteImages).toEqual({ directory: './assets' });
+    expect(upgraded.scrollbarVisibility).toBe('auto');
+  });
+
+  it('applies minimap width changes to Monaco', () => {
+    const dispatcher = new EditorDispatcher();
+    const mkeditor = new EditorManager({
+      dispatcher,
+      init: true,
+      watch: false,
+    });
+    const model = mkeditor.getMkEditor()!;
+    const provider = new SettingsProvider('web', model);
+    (model.updateOptions as jest.Mock).mockClear();
+
+    provider.updateSetting('minimapMaxColumn', 180);
+
+    expect(model.updateOptions).toHaveBeenCalledWith({
+      minimap: { enabled: true, scale: 2, maxColumn: 90 },
+    });
+  });
+
+  it('clamps legacy line-number gutter widths to the supported minimum of 3', () => {
+    localStorage.setItem(
+      'mkeditor-settings',
+      JSON.stringify({ lineNumbersMinChars: 1 }),
+    );
+    const dispatcher = new EditorDispatcher();
+    const mkeditor = new EditorManager({
+      dispatcher,
+      init: true,
+      watch: false,
+    });
+    const model = mkeditor.getMkEditor()!;
+    const provider = new SettingsProvider('web', model);
+
+    expect(provider.getSetting('lineNumbersMinChars')).toBe(3);
+    expect(model.updateOptions).toHaveBeenCalledWith({
+      lineNumbersMinChars: 3,
+      lineDecorationsWidth: 0,
+    });
+    expect(
+      JSON.parse(localStorage.getItem('mkeditor-settings') as string)
+        .lineNumbersMinChars,
+    ).toBe(3);
+  });
+
+  it('normalizes malformed persisted font sizes at the provider boundary', () => {
+    localStorage.setItem(
+      'mkeditor-settings',
+      JSON.stringify({
+        editorFontSize: -10,
+        previewTextFontSize: 500,
+        previewCodeFontSize: 'invalid',
+      }),
+    );
+    const dispatcher = new EditorDispatcher();
+    const mkeditor = new EditorManager({
+      dispatcher,
+      init: true,
+      watch: false,
+    });
+    const provider = new SettingsProvider('web', mkeditor.getMkEditor()!);
+
+    expect(provider.getSetting('editorFontSize')).toBe(9);
+    expect(provider.getSetting('previewTextFontSize')).toBe(72);
+    expect(provider.getSetting('previewCodeFontSize')).toBe(14);
+    expect(
+      JSON.parse(localStorage.getItem('mkeditor-settings') as string),
+    ).toMatchObject({
+      editorFontSize: 9,
+      previewTextFontSize: 72,
+      previewCodeFontSize: 14,
+    });
   });
 
   it('skips re-persisting when stored already has every key', () => {
@@ -130,12 +229,15 @@ describe('SettingsProvider.loadSettingsFromLocalStorage (web)', () => {
       wordwrap: true,
       whitespace: false,
       minimap: true,
+      minimapMaxColumn: 120,
+      scrollbarVisibility: 'auto',
       systemtheme: false,
       scrollsync: true,
       sessionRestore: false,
       locale: 'en',
       fileExplorer: { extensions: ['md'] },
       pasteImages: { directory: './assets' },
+      uiFontFamily: "'Nunito Sans', 'Open Sans', 'Lato', sans-serif",
       editorFontFamily:
         "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
       previewTextFontFamily:
@@ -164,6 +266,78 @@ describe('SettingsProvider.loadSettingsFromLocalStorage (web)', () => {
     // No upgrade-persist write should have fired.
     expect(setItemSpy).not.toHaveBeenCalled();
     setItemSpy.mockRestore();
+  });
+
+  it('applies scrollbar visibility and keeps auto scrollbars visible for 1 second', () => {
+    jest.useFakeTimers();
+    try {
+      const dispatcher = new EditorDispatcher();
+      const mkeditor = new EditorManager({
+        dispatcher,
+        init: true,
+        watch: false,
+      });
+      const model = mkeditor.getMkEditor()!;
+      const provider = new SettingsProvider('web', model);
+      const node = model.getDomNode()!;
+      (model.updateOptions as jest.Mock).mockClear();
+
+      provider.updateSetting('scrollbarVisibility', 'hidden');
+      expect(model.updateOptions).toHaveBeenCalledWith({
+        scrollbar: {
+          vertical: 'hidden',
+          horizontal: 'hidden',
+          verticalScrollbarSize: 0,
+          verticalSliderSize: 0,
+          horizontalScrollbarSize: 0,
+          horizontalSliderSize: 0,
+        },
+        overviewRulerLanes: 0,
+        overviewRulerBorder: false,
+      });
+      expect(node.dataset.scrollbarVisibility).toBe('hidden');
+
+      provider.updateSetting('scrollbarVisibility', 'auto');
+      expect(model.updateOptions).toHaveBeenLastCalledWith({
+        scrollbar: {
+          vertical: 'visible',
+          horizontal: 'visible',
+          verticalScrollbarSize: 14,
+          verticalSliderSize: 14,
+          horizontalScrollbarSize: 12,
+          horizontalSliderSize: 12,
+        },
+        overviewRulerLanes: 3,
+        overviewRulerBorder: true,
+      });
+      const onScroll = (model.onDidScrollChange as jest.Mock).mock.calls.at(
+        -1,
+      )[0];
+      onScroll();
+      expect(node).toHaveClass('scrollbar-scrolling');
+      jest.advanceTimersByTime(999);
+      expect(node).toHaveClass('scrollbar-scrolling');
+      jest.advanceTimersByTime(1);
+      expect(node).not.toHaveClass('scrollbar-scrolling');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('applies the UI font family to the document root', () => {
+    const dispatcher = new EditorDispatcher();
+    const mkeditor = new EditorManager({
+      dispatcher,
+      init: true,
+      watch: false,
+    });
+    const provider = new SettingsProvider('web', mkeditor.getMkEditor()!);
+
+    provider.updateSetting('uiFontFamily', "Inter, 'Noto Sans', sans-serif");
+
+    expect(
+      document.documentElement.style.getPropertyValue('--mk-ui-font-family'),
+    ).toBe("Inter, 'Noto Sans', sans-serif");
   });
 
   it('falls back to defaults on corrupted stored value', () => {
@@ -254,6 +428,9 @@ describe('SettingsProvider system-theme tracking', () => {
     provider.setOsDarkmode(false);
     expect(document.body.getAttribute('data-theme')).toBe('dark');
     expect(provider.getSetting('darkmode')).toBe(true);
+    expect(monacoEditor.setTheme).toHaveBeenLastCalledWith(
+      MONOKAI_PRO_THEME_NAME,
+    );
   });
 
   it('flips the rendered theme when systemtheme is toggled, preserving stored darkmode', () => {
@@ -373,5 +550,29 @@ describe('SettingsProvider system-theme tracking', () => {
     provider.setOsDarkmode(false);
     expect(provider.getSnapshot().darkmode).toBe(true);
     expect(provider.getSnapshot().effectiveDarkmode).toBe(false);
+  });
+});
+
+describe('SettingsProvider locale switching', () => {
+  it('resolves system from the OS instead of the previously stored locale', () => {
+    const dispatcher = new EditorDispatcher();
+    const mkeditor = new EditorManager({
+      dispatcher,
+      init: true,
+      watch: false,
+    });
+    const getSystemLocale = jest.fn(() => 'zh-CN');
+    window.mked = {
+      getSystemLocale,
+    } as unknown as typeof window.mked;
+    window.setLanguage = jest.fn();
+    const provider = new SettingsProvider('desktop', mkeditor.getMkEditor()!);
+
+    provider.updateSetting('locale', 'ja');
+    provider.updateSetting('locale', 'system');
+
+    expect(getSystemLocale).toHaveBeenCalledTimes(1);
+    expect(window.setLanguage).toHaveBeenLastCalledWith('zh');
+    delete window.mked;
   });
 });

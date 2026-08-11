@@ -4,6 +4,7 @@ import { useManagers } from './ManagersContext';
 
 export interface WindowControls {
   isMaximized: boolean;
+  isFullScreen: boolean;
   minimize: () => void;
   maximize: () => void;
   close: () => void;
@@ -12,13 +13,14 @@ export interface WindowControls {
 
 const NOOP: WindowControls = {
   isMaximized: false,
+  isFullScreen: false,
   minimize: () => {},
   maximize: () => {},
   close: () => {},
   toggleFullscreen: () => {},
 };
 
-const EMPTY_STATE = { isMaximized: false };
+const EMPTY_STATE = { isMaximized: false, isFullScreen: false };
 
 const WindowContext = React.createContext<WindowControls>(NOOP);
 
@@ -57,16 +59,21 @@ export const WindowProvider: React.FC<{ children: React.ReactNode }> = ({
     // IPC — render the buttons but make them inert. Web's `<TitleBar>`
     // hides the controls entirely so this is mostly defensive.
     if (!bridgeManager || mode === 'web') {
-      return { ...NOOP, isMaximized: state.isMaximized };
+      return {
+        ...NOOP,
+        isMaximized: state.isMaximized,
+        isFullScreen: state.isFullScreen,
+      };
     }
     return {
       isMaximized: state.isMaximized,
+      isFullScreen: state.isFullScreen,
       minimize: () => bridgeManager.windowMinimize(),
       maximize: () => bridgeManager.windowMaximize(),
       close: () => bridgeManager.windowClose(),
       toggleFullscreen: () => bridgeManager.windowToggleFullscreen(),
     };
-  }, [bridgeManager, mode, state.isMaximized]);
+  }, [bridgeManager, mode, state.isFullScreen, state.isMaximized]);
 
   return (
     <WindowContext.Provider value={value}>{children}</WindowContext.Provider>

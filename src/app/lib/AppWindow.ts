@@ -61,9 +61,8 @@ export class AppWindow {
       this.context.close();
     });
 
-    // Native `role: 'togglefullscreen'` accelerators only fire when the
-    // application menu is mounted — Windows/Linux clear the menu in P1,
-    // so the renderer's in-window menu drives this IPC instead.
+    // The renderer's in-window menu drives fullscreen through this IPC;
+    // the hidden Electron application menu still owns global accelerators.
     this.on('to:window:fullscreen', () => {
       if (this.context.isDestroyed()) return;
       this.context.setFullScreen(!this.context.isFullScreen());
@@ -100,6 +99,8 @@ export class AppWindow {
     this.context.on('resize', () => this.scheduleWindowStateSave());
     this.context.on('move', () => this.scheduleWindowStateSave());
     this.context.on('close', () => this.saveWindowState());
+    this.context.on('enter-full-screen', () => this.emitState());
+    this.context.on('leave-full-screen', () => this.emitState());
 
     // Tear down IPC listeners when this window closes so we don't leak
     // handlers (macOS recreates the window via `app.on('activate')`)
@@ -111,7 +112,7 @@ export class AppWindow {
     // `main.ts`). Without this the maximize icon would render in the
     // wrong state on reload.
     this.context.webContents.once('did-finish-load', () => {
-      this.emitState(this.context.isMaximized());
+      this.emitState();
     });
   }
 
@@ -141,9 +142,12 @@ export class AppWindow {
     this.listeners = [];
   }
 
-  private emitState(isMaximized: boolean): void {
+  private emitState(isMaximized = this.context.isMaximized()): void {
     if (this.context.isDestroyed()) return;
-    this.context.webContents.send('from:window:state', { isMaximized });
+    this.context.webContents.send('from:window:state', {
+      isMaximized,
+      isFullScreen: this.context.isFullScreen(),
+    });
   }
 
   private scheduleWindowStateSave(): void {

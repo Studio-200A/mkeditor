@@ -14,11 +14,11 @@ import {
   getCurrentAssistantState,
   registerAssistantStateChangeListener,
 } from './react/contexts/UIStateContext';
+import { registerSidebarStateChangeListener } from './assistantUiState';
 import {
-  getCurrentSidebarOpen,
-  registerSidebarStateChangeListener,
-  setWindowMaximizedGetter,
-} from './assistantUiState';
+  getCurrentLayoutState,
+  registerLayoutStateChangeListener,
+} from './layoutUiState';
 
 // The bi-directional synchronous bridge to the main execution context.
 // Exposed on the window object through the preloader.
@@ -94,9 +94,9 @@ if (!reactRoot) {
     '#react-root not found in DOM; aborting Monaco mount.',
   );
 } else {
-  // Mount React immediately with an editor-less Managers object —
-  // the splash overlay is still up so the user sees no blank frame.
-  // The async `boot()` below loads Monaco + the manager classes as
+  // Mount React immediately with an editor-less Managers object so the
+  // application shell appears while the async `boot()` below loads Monaco
+  // and the manager classes as
   // a separate webpack chunk, then pushes the fully-wired managers
   // into React state via setReactManagers.
   createRoot(reactRoot).render(
@@ -118,8 +118,7 @@ if (!reactRoot) {
  * construct the editor manager + providers. Webpack splits everything
  * imported here (EditorManager, the five providers, BridgeManager and
  * its FileManager/FileTreeManager/BridgeListeners, plus Monaco itself)
- * into a separate bundle that the user only downloads once, behind
- * the splash overlay.
+ * into a separate bundle that the user only downloads once.
  */
 async function boot() {
   const [
@@ -132,6 +131,7 @@ async function boot() {
     { ExportSettingsProvider },
     { BridgeManager },
     { WebFileBridge },
+    { registerGfmMarkdownHighlighting },
   ] = await Promise.all([
     import('./core/EditorManager'),
     import('./core/providers/CommandProvider'),
@@ -142,8 +142,10 @@ async function boot() {
     import('./core/providers/ExportSettingsProvider'),
     import('./core/BridgeManager'),
     import('./core/WebFileBridge'),
+    import('./extensions/editor/GfmHighlight'),
   ]);
 
+  registerGfmMarkdownHighlighting();
   const editorManager = new EditorManager({ dispatcher });
 
   // Push the EditorManager into React state. <EditorHost>'s useEffect
@@ -258,19 +260,29 @@ function onEditorReadyInner() {
   // Changes inside UIStateContext fire the change listener wired
   // here, which goes through FileManager's existing 300 ms-debounced
   // save pipeline so AI Assistant churn coalesces with tab churn.
-  bridgeManager.fileManager.setAssistantStateGetter(getCurrentAssistantState);
+  bridgeManager.fileManager.setAssistantStateGetter(() => ({
+    ...getCurrentAssistantState(),
+    sidebarOpen: getCurrentLayoutState().assistant,
+  }));
   registerAssistantStateChangeListener(() =>
     bridgeManager.fileManager.notifyAssistantStateChanged(),
   );
 
   // Left (file-tree) sidebar state → session persistence.
-  bridgeManager.fileManager.setSidebarOpenGetter(getCurrentSidebarOpen);
+  bridgeManager.fileManager.setSidebarOpenGetter(
+    () => getCurrentLayoutState().sidebar,
+  );
   registerSidebarStateChangeListener(() =>
     bridgeManager.fileManager.scheduleSessionSave(),
   );
 
+  bridgeManager.fileManager.setLayoutStateGetter(getCurrentLayoutState);
+  registerLayoutStateChangeListener(() => {
+    bridgeManager.fileManager.scheduleSessionSave();
+    setTimeout(() => bridgeManager.syncLayoutState(getCurrentLayoutState()));
+  });
+
   // Window maximized state → session persistence.
-  setWindowMaximizedGetter(() => bridgeManager.getWindowState().isMaximized);
   bridgeManager.fileManager.setWindowMaximizedGetter(
     () => bridgeManager.getWindowState().isMaximized,
   );

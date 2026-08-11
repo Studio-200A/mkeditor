@@ -39,14 +39,8 @@ let changeListener: (() => void) | null = null;
 let externalToggle: (() => void) | null = null;
 
 // Left (file-tree) sidebar seam — same pattern as above, single boolean.
-let sidebarOpenMirror = true;
 let restoreSidebarHandler: ((open: boolean) => void) | null = null;
 let sidebarChangeListener: (() => void) | null = null;
-
-// Window maximized seam — BridgeManager is the source of truth, but
-// FileManager needs a getter that doesn't import BridgeManager.
-// The composition root wires this by closing over the BridgeManager instance.
-let windowMaximizedGetter: (() => boolean) | null = null;
 
 // ---- Public surface (managers + composition root) -------------------
 
@@ -122,17 +116,12 @@ export function _notifyAssistantStateChange(): void {
 
 // ---- Left sidebar seam (file-tree) ----------------------------------
 
-export function getCurrentSidebarOpen(): boolean {
-  return sidebarOpenMirror;
-}
-
 export function applyRestoredSidebarOpen(open: boolean): void {
   restoreSidebarHandler?.(open);
 }
 
 /** Set the file-tree sidebar from a non-React user action and persist it. */
 export function setSidebarOpenExternal(open: boolean): void {
-  sidebarOpenMirror = open;
   restoreSidebarHandler?.(open);
   sidebarChangeListener?.();
 }
@@ -147,20 +136,6 @@ export function _setRestoreSidebarHandler(
   restoreSidebarHandler = fn;
 }
 
-export function _syncSidebarMirror(open: boolean): void {
-  sidebarOpenMirror = open;
-}
-
 export function _notifySidebarStateChange(): void {
   sidebarChangeListener?.();
-}
-
-// ---- Window maximized seam ------------------------------------------
-
-export function setWindowMaximizedGetter(fn: (() => boolean) | null): void {
-  windowMaximizedGetter = fn;
-}
-
-export function getWindowMaximized(): boolean {
-  return windowMaximizedGetter?.() ?? true;
 }

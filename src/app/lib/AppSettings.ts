@@ -34,12 +34,15 @@ export class AppSettings {
     wordwrap: true,
     whitespace: false,
     minimap: true,
+    minimapMaxColumn: 120,
+    scrollbarVisibility: 'auto',
     systemtheme: true,
     scrollsync: true,
     sessionRestore: true,
     locale: 'system',
     fileExplorer: { extensions: ['md'] },
     pasteImages: { directory: './assets' },
+    uiFontFamily: "'Nunito Sans', 'Open Sans', 'Lato', sans-serif",
     editorFontFamily:
       "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
     previewTextFontFamily:
@@ -80,6 +83,21 @@ export class AppSettings {
     // Create the file if it doesn't exist, then load it.
     this.createFileIfNotExists(this.settings);
     const loaded = this.loadFile() as SettingsFile;
+    const normalized = {
+      ...loaded,
+      editorFontSize: this.normalizeFontSize(loaded.editorFontSize, 14),
+      previewTextFontSize: this.normalizeFontSize(
+        loaded.previewTextFontSize,
+        16,
+      ),
+      previewCodeFontSize: this.normalizeFontSize(
+        loaded.previewCodeFontSize,
+        14,
+      ),
+      lineNumbersMinChars: this.normalizeLineNumbersMinChars(
+        loaded.lineNumbersMinChars,
+      ),
+    };
 
     // Set applied BEFORE the integrity check so that a subsequent
     // upgrade-merge inside saveSettingsToFile() can overwrite
@@ -87,13 +105,30 @@ export class AppSettings {
     // ordering the final assignment (which was previously on the
     // last line of the constructor) would overwrite the merged
     // payload with the pre-merge stale `loaded` object.
-    this.applied = loaded;
+    this.applied = normalized;
 
     // Check for settings file integrity
-    if (!this.isNewFile && !hasAllKeys(this.settings, loaded)) {
-      this.saveSettingsToFile(deepMerge(this.settings, loaded));
+    if (
+      !this.isNewFile &&
+      (!hasAllKeys(this.settings, loaded) ||
+        normalized.lineNumbersMinChars !== loaded.lineNumbersMinChars ||
+        normalized.editorFontSize !== loaded.editorFontSize ||
+        normalized.previewTextFontSize !== loaded.previewTextFontSize ||
+        normalized.previewCodeFontSize !== loaded.previewCodeFontSize)
+    ) {
+      this.saveSettingsToFile(deepMerge(this.settings, normalized));
       // saveSettingsToFile has already updated this.applied
     }
+  }
+
+  private normalizeFontSize(raw: unknown, fallback: number): number {
+    if (typeof raw !== 'number' || !Number.isFinite(raw)) return fallback;
+    return Math.min(72, Math.max(9, Math.round(raw)));
+  }
+
+  private normalizeLineNumbersMinChars(raw: unknown): number {
+    if (typeof raw !== 'number' || !Number.isFinite(raw)) return 5;
+    return Math.min(10, Math.max(3, Math.round(raw)));
   }
 
   /**

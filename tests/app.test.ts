@@ -68,9 +68,11 @@ jest.mock('../src/app/lib/AppStorage', () => ({
 
 import { app, BrowserWindow, ipcMain, nativeTheme } from 'electron';
 import { AppSession } from '../src/app/lib/AppSession';
+import { AppStorage } from '../src/app/lib/AppStorage';
 
 describe('Electron main app', () => {
   it('creates main window on ready', () => {
+    (app.getVersion as jest.Mock).mockReturnValue('4.2.0-custom');
     require('../src/app/main');
     (AppSession.load as jest.Mock).mockReturnValueOnce({
       version: 3,
@@ -106,6 +108,22 @@ describe('Electron main app', () => {
     });
     expect(winInstance.maximize).toHaveBeenCalledTimes(1);
     expect(winInstance.show).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses the file path supplied by the macOS open-file event', () => {
+    const openFileHandler = app.on.mock.calls.find(
+      (c: any) => c[0] === 'open-file',
+    )[1];
+    const event = { preventDefault: jest.fn() };
+    (AppStorage.openActiveFile as jest.Mock).mockClear();
+
+    openFileHandler(event, '/tmp/from-finder.md');
+
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(AppStorage.openActiveFile).toHaveBeenCalledWith(
+      expect.anything(),
+      '/tmp/from-finder.md',
+    );
   });
 
   it('subscribes to nativeTheme.on("updated") so live OS theme switches propagate without a relaunch', () => {

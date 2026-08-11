@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { screen, fireEvent, within } from '@testing-library/react';
+import { act, screen, fireEvent, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import { SettingsModal } from '../../src/browser/react/components/modals/SettingsModal';
 import { useModals } from '../../src/browser/react/contexts/ModalsContext';
@@ -20,6 +21,11 @@ jest.mock('../../src/browser/i18n', () => ({
   ]),
 }));
 
+beforeAll(() => {
+  Element.prototype.hasPointerCapture = jest.fn(() => false) as never;
+  Element.prototype.scrollIntoView = jest.fn() as never;
+});
+
 /**
  * Builds a fake SettingsProvider that satisfies the
  * `subscribe`/`getSnapshot`/`updateSetting` contract SettingsContext
@@ -32,12 +38,15 @@ function fakeSettingsProvider(initial: Partial<EditorSettings> = {}) {
     wordwrap: true,
     whitespace: false,
     minimap: true,
+    minimapMaxColumn: 120,
+    scrollbarVisibility: 'auto',
     systemtheme: false,
     scrollsync: true,
     sessionRestore: true,
     locale: 'en',
     fileExplorer: { extensions: ['md'] },
     pasteImages: { directory: './assets' },
+    uiFontFamily: "'Nunito Sans', 'Open Sans', 'Lato', sans-serif",
     editorFontFamily:
       "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
     previewTextFontFamily:
@@ -110,6 +119,20 @@ describe('<SettingsModal>', () => {
     await screen.findByRole('dialog');
 
     const dialog = screen.getByRole('dialog');
+    const navigation = within(dialog).getByRole('navigation');
+    expect(
+      within(navigation).getByText('modals-settings:tab_general'),
+    ).toHaveClass('text-base', 'font-bold');
+    expect(
+      within(navigation).getByRole('button', {
+        name: 'modals-settings:session',
+      }),
+    ).toHaveClass('text-sm');
+    fireEvent.click(
+      within(dialog).getByRole('button', {
+        name: 'modals-settings:formatting',
+      }),
+    );
 
     // The autoindent checkbox starts unchecked (radix checkbox uses
     // data-state=unchecked when not checked).
@@ -128,7 +151,7 @@ describe('<SettingsModal>', () => {
     expect(autoindent.getAttribute('data-state')).toBe('checked');
   });
 
-  it('hides the AI Providers tab entirely when mode is web (P7 decision — desktop-only AI)', async () => {
+  it('hides the AI settings section entirely when mode is web', async () => {
     // Regression: web AI was dropped (no localStorage keys). The
     // AI Providers tab trigger AND content must NOT render in web
     // mode, AND any externally-requested `payload.tab: 'assistant'`
@@ -161,23 +184,23 @@ describe('<SettingsModal>', () => {
     );
     const dialog = await screen.findByRole('dialog');
     expect(
-      within(dialog).queryByRole('tab', {
+      within(dialog).queryByRole('button', {
         name: 'modals-settings:tab_assistant',
       }),
     ).toBeNull();
-    // General tab is the only one and is selected as fallback.
     expect(
-      within(dialog).getByRole('tab', {
-        name: 'modals-settings:tab_general',
+      within(dialog).getByRole('button', {
+        name: 'modals-settings:session',
       }),
-    ).toHaveAttribute('aria-selected', 'true');
-    // Title doesn't switch to the AI variant either.
+    ).toHaveAttribute('aria-current', 'page');
     expect(
-      within(dialog).queryByText('modals-settings:title_assistant'),
-    ).toBeNull();
+      within(dialog).getByRole('heading', {
+        name: 'modals-settings:session',
+      }),
+    ).toBeInTheDocument();
   });
 
-  it('opens on the AI Providers tab when payload.tab is "assistant", and swaps the title accordingly', async () => {
+  it('opens on AI Providers when payload.tab is "assistant"', async () => {
     const settingsProvider = fakeSettingsProvider({});
     const OpenOnAssistantTab: React.FC = () => {
       const { openModal } = useModals();
@@ -210,23 +233,21 @@ describe('<SettingsModal>', () => {
     );
 
     const dialog = await screen.findByRole('dialog');
-    // Title swaps to the AI variant (the i18n mock echoes keys, so we
-    // match the key directly).
     expect(
-      within(dialog).getByText('modals-settings:title_assistant'),
+      within(dialog).getByRole('heading', {
+        name: 'modals-settings:title',
+      }),
     ).toBeInTheDocument();
-    expect(within(dialog).queryByText('modals-settings:title')).toBeNull();
-    // The AI Providers tab trigger is selected, not General.
     expect(
-      within(dialog).getByRole('tab', {
+      within(dialog).getByRole('button', {
         name: 'modals-settings:tab_assistant',
       }),
-    ).toHaveAttribute('aria-selected', 'true');
+    ).toHaveAttribute('aria-current', 'page');
     expect(
-      within(dialog).getByRole('tab', {
-        name: 'modals-settings:tab_general',
+      within(dialog).getByRole('heading', {
+        name: 'modals-settings:tab_assistant',
       }),
-    ).toHaveAttribute('aria-selected', 'false');
+    ).toBeInTheDocument();
   });
 
   it('updateSetting fires when the wordwrap checkbox is toggled off', async () => {
@@ -254,6 +275,11 @@ describe('<SettingsModal>', () => {
     // inside act(...); otherwise its setLocales fires after the test
     // returns and React emits an act() warning.
     const dialog = await screen.findByRole('dialog');
+    fireEvent.click(
+      within(dialog).getByRole('button', {
+        name: 'modals-settings:formatting',
+      }),
+    );
     const wordwrap = within(dialog).getByRole('checkbox', {
       name: /wordwrap/i,
     });
@@ -262,6 +288,131 @@ describe('<SettingsModal>', () => {
     expect(settingsProvider.updateSetting).toHaveBeenCalledWith(
       'wordwrap',
       false,
+    );
+  });
+
+  it('updates the UI font from the Appearance section', async () => {
+    const settingsProvider = fakeSettingsProvider({});
+    renderWithProviders(
+      <>
+        <OpenSettings />
+        <SettingsModal />
+      </>,
+      {
+        managers: {
+          providers: {
+            bridge: null,
+            commands: null,
+            completion: null,
+            settings: settingsProvider as any,
+            exportSettings: null,
+          },
+        },
+      },
+    );
+
+    const dialog = await screen.findByRole('dialog');
+    await act(async () => {
+      fireEvent.click(
+        within(dialog).getByRole('button', {
+          name: 'modals-settings:appearance',
+        }),
+      );
+    });
+    fireEvent.change(within(dialog).getByTestId('ui-font-family-input'), {
+      target: { value: "Inter, 'Noto Sans', sans-serif" },
+    });
+    expect(settingsProvider.updateSetting).toHaveBeenCalledWith(
+      'uiFontFamily',
+      "Inter, 'Noto Sans', sans-serif",
+    );
+  });
+
+  it('updates minimap and scrollbar display settings', async () => {
+    const user = userEvent.setup();
+    const settingsProvider = fakeSettingsProvider({
+      minimap: true,
+      minimapMaxColumn: 120,
+    });
+
+    renderWithProviders(
+      <>
+        <OpenSettings />
+        <SettingsModal />
+      </>,
+      {
+        managers: {
+          providers: {
+            bridge: null,
+            commands: null,
+            completion: null,
+            settings: settingsProvider as any,
+            exportSettings: null,
+          },
+        },
+      },
+    );
+
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(
+      within(dialog).getByRole('button', {
+        name: 'modals-settings:editing',
+      }),
+    );
+    const width = within(dialog).getByLabelText(
+      'modals-settings:minimap_width_label',
+    );
+    expect(width).toHaveValue(120);
+
+    fireEvent.change(width, { target: { value: '1' } });
+    expect(width).toHaveValue(1);
+    expect(settingsProvider.updateSetting).not.toHaveBeenCalled();
+
+    fireEvent.change(width, { target: { value: '10' } });
+    expect(width).toHaveValue(10);
+    expect(settingsProvider.updateSetting).not.toHaveBeenCalled();
+
+    fireEvent.change(width, { target: { value: '100' } });
+    expect(width).toHaveValue(100);
+    expect(settingsProvider.updateSetting).toHaveBeenCalledWith(
+      'minimapMaxColumn',
+      100,
+    );
+
+    settingsProvider.updateSetting.mockClear();
+    fireEvent.change(width, { target: { value: '10' } });
+    fireEvent.blur(width);
+    expect(width).toHaveValue(20);
+    expect(settingsProvider.updateSetting).toHaveBeenCalledWith(
+      'minimapMaxColumn',
+      20,
+    );
+
+    fireEvent.click(
+      within(dialog).getByRole('checkbox', {
+        name: /modals-settings:minimap_label/,
+      }),
+    );
+    expect(width).toBeDisabled();
+
+    fireEvent.click(
+      within(dialog).getByRole('button', {
+        name: 'modals-settings:scrollbars',
+      }),
+    );
+    await user.click(
+      within(dialog).getByRole('combobox', {
+        name: 'modals-settings:scrollbar_visibility_label',
+      }),
+    );
+    await user.click(
+      await screen.findByRole('option', {
+        name: 'modals-settings:scrollbar_visibility_hidden',
+      }),
+    );
+    expect(settingsProvider.updateSetting).toHaveBeenCalledWith(
+      'scrollbarVisibility',
+      'hidden',
     );
   });
 });

@@ -20,6 +20,15 @@
   "edit.paste": "Einfügen",
 
   "view.palette": "Befehlspalette öffnen",
+  "view.layout": "Layout",
+  "view.layout.toolbar": "Symbolleiste anzeigen",
+  "view.layout.tabs": "Tableiste anzeigen",
+  "view.layout.sidebar": "Explorer-Seitenleiste anzeigen",
+  "view.layout.editor": "Editor anzeigen",
+  "view.layout.preview": "Vorschau anzeigen",
+  "view.layout.statusbar": "Statusleiste anzeigen",
+  "view.layout.assistant": "KI-Assistent-Seitenleiste anzeigen",
+  "view.layout.reset": "Layout zurücksetzen",
   "view.fullscreen": "Vollbild umschalten",
   "view.devtools": "Entwicklertools umschalten",
 

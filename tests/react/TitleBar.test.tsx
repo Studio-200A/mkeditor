@@ -10,6 +10,10 @@ import {
 import { WindowProvider } from '../../src/browser/react/contexts/WindowContext';
 import { menuModel } from '../../src/app/lib/menuModel';
 import { dispatchMenuActionExternal } from '../../src/browser/menuDispatch';
+import {
+  UIStateProvider,
+  getCurrentLayoutState,
+} from '../../src/browser/react/contexts/UIStateContext';
 
 jest.mock('../../src/browser/menuDispatch', () => ({
   dispatchMenuActionExternal: jest.fn(),
@@ -32,7 +36,7 @@ beforeAll(() => {
 });
 
 function buildBridgeManager(initial = false) {
-  let state = { isMaximized: initial };
+  let state = { isMaximized: initial, isFullScreen: false };
   const listeners = new Set<() => void>();
   return {
     subscribeWindowState: (l: () => void) => {
@@ -80,7 +84,9 @@ function renderTitleBar(
   const utils = render(
     <ManagersProvider value={managers}>
       <WindowProvider>
-        <TitleBar />
+        <UIStateProvider initialSidebarOpen>
+          <TitleBar />
+        </UIStateProvider>
       </WindowProvider>
     </ManagersProvider>,
   );
@@ -117,6 +123,34 @@ describe('<TitleBar>', () => {
         channel: 'from:file:new',
       }),
     );
+  });
+
+  it('switches an open dropdown when another menu trigger is hovered', async () => {
+    const user = userEvent.setup();
+    renderTitleBar();
+    await user.click(screen.getByRole('button', { name: 'File' }));
+    expect(
+      await screen.findByRole('menuitem', { name: /New File/ }),
+    ).toBeInTheDocument();
+
+    await user.hover(screen.getByRole('button', { name: 'Edit' }));
+
+    expect(
+      await screen.findByRole('menuitem', { name: /Undo/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('menuitem', { name: /New File/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('gives dropdown rows explicit hover and highlighted styles', async () => {
+    const user = userEvent.setup();
+    renderTitleBar();
+    await user.click(screen.getByRole('button', { name: 'File' }));
+    const item = await screen.findByRole('menuitem', { name: /New File/ });
+
+    expect(item).toHaveClass('hover:bg-menu-highlight');
+    expect(item).toHaveClass('data-[highlighted]:bg-menu-highlight');
   });
 
   it('renders window-control buttons on desktop', () => {
@@ -156,13 +190,28 @@ describe('<TitleBar>', () => {
     ).toBeInTheDocument();
 
     act(() => {
-      bridge.setWindowState({ isMaximized: true });
+      bridge.setWindowState({ isMaximized: true, isFullScreen: false });
     });
 
     expect(screen.getByRole('button', { name: 'Restore' })).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'Maximize' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('hides only while the window is in true fullscreen', () => {
+    const { bridge } = renderTitleBar();
+    expect(screen.getByTestId('title-bar')).toBeInTheDocument();
+
+    act(() => {
+      bridge.setWindowState({ isMaximized: true, isFullScreen: true });
+    });
+    expect(screen.queryByTestId('title-bar')).not.toBeInTheDocument();
+
+    act(() => {
+      bridge.setWindowState({ isMaximized: true, isFullScreen: false });
+    });
+    expect(screen.getByTestId('title-bar')).toBeInTheDocument();
   });
 
   it('Edit menu items map to role actions', async () => {
@@ -204,6 +253,23 @@ describe('<TitleBar>', () => {
         commandId: 'toggle-devtools',
       }),
     );
+  });
+
+  it('renders Layout as a checkbox submenu and updates visibility', async () => {
+    const user = userEvent.setup();
+    renderTitleBar();
+    await user.click(screen.getByRole('button', { name: 'View' }));
+    await user.hover(await screen.findByRole('menuitem', { name: 'Layout' }));
+
+    const toolbar = await screen.findByRole('menuitemcheckbox', {
+      name: 'Show Toolbar',
+    });
+    expect(screen.getByRole('menuitem', { name: 'Reset Layout' })).toHaveClass(
+      'pl-8',
+    );
+    expect(toolbar).toHaveAttribute('data-state', 'checked');
+    fireEvent.click(toolbar);
+    expect(getCurrentLayoutState().toolbar).toBe(false);
   });
 
   it('renders nothing on macOS desktop (native menu owns that surface)', () => {

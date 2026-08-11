@@ -354,6 +354,13 @@ export class AppBridge {
       event.returnValue = locale;
     });
 
+    // Unlike mked:get-locale, this never consults persisted settings. It is
+    // used when the user changes an explicit locale back to "system" before
+    // the async settings-save IPC has reached main.
+    this.onSync('mked:get-system-locale', (event) => {
+      event.returnValue = normalizeLanguage(app.getLocale());
+    });
+
     // Hand the renderer the SPKI base64 public key for this app
     // session.
     this.onSync('mked:secure:public-key', (event) => {

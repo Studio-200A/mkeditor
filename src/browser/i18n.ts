@@ -166,7 +166,7 @@ export function resolveLocale(lng: string, mode: 'desktop' | 'web'): string {
   if (lng !== 'system') return lng;
   if (mode === 'desktop') {
     if (window.mked) {
-      return normalizeLanguage(window.mked.getAppLocale());
+      return normalizeLanguage(window.mked.getSystemLocale());
     }
     return 'en';
   }

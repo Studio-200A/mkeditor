@@ -18,7 +18,7 @@ import { join, normalize } from 'path';
 import type { SessionPayload } from '../src/app/interfaces/Session';
 
 const validPayload: SessionPayload = {
-  version: 3,
+  version: 4,
   activeFile: '/abs/path/foo.md',
   workspaceRoot: null,
   tabs: [
@@ -167,6 +167,33 @@ describe('AppSession.load', () => {
     });
   });
 
+  it('round-trips a v4 layout snapshot and rejects incomplete layout data', () => {
+    withTempHome((tmpHome) => {
+      const AppSession = loadAppSession(tmpHome);
+      const layout = {
+        toolbar: false,
+        tabBar: true,
+        sidebar: false,
+        editor: true,
+        preview: false,
+        statusBar: true,
+        assistant: true,
+      };
+      AppSession.save({ ...validPayload, layout });
+      expect(AppSession.load()?.layout).toEqual(layout);
+
+      const file = normalize(tmpHome + '/.mkeditor/session.json');
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const fs = require('fs') as typeof import('fs');
+      fs.writeFileSync(
+        file,
+        JSON.stringify({ ...validPayload, layout: { toolbar: true } }),
+        'utf-8',
+      );
+      expect(AppSession.load()).toBeNull();
+    });
+  });
+
   it('returns null when the schema version mismatches', () => {
     withTempHome((tmpHome) => {
       const dir = normalize(tmpHome + '/.mkeditor/');
@@ -195,6 +222,27 @@ describe('AppSession.load', () => {
       fs.writeFileSync(
         file,
         JSON.stringify({ version: 1, activeFile: null }),
+        'utf-8',
+      );
+
+      const AppSession = loadAppSession(tmpHome);
+      expect(AppSession.load()).toBeNull();
+    });
+  });
+
+  it('rejects non-finite or non-positive window bounds', () => {
+    withTempHome((tmpHome) => {
+      const dir = normalize(tmpHome + '/.mkeditor/');
+      const file = dir + 'session.json';
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const fs = require('fs') as typeof import('fs');
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(
+        file,
+        JSON.stringify({
+          ...validPayload,
+          bounds: { x: 0, y: 0, width: 0, height: 600 },
+        }),
         'utf-8',
       );
 
@@ -314,7 +362,7 @@ describe('AppSession.save', () => {
 
       const file = normalize(tmpHome + '/.mkeditor/session.json');
       const written = JSON.parse(readFileSync(file, { encoding: 'utf-8' }));
-      expect(written.version).toBe(3);
+      expect(written.version).toBe(4);
     });
   });
 
@@ -551,6 +599,33 @@ describe('AppSession.clear', () => {
 
       AppSession.clear();
       expect(existsSync(file)).toBe(false);
+    });
+  });
+
+  it('keeps tabs cleared when quit-time state writes recreate the file', () => {
+    withTempHome((tmpHome) => {
+      const AppSession = loadAppSession(tmpHome);
+      AppSession.save(validPayload);
+      AppSession.clear();
+      AppSession.save({
+        ...validPayload,
+        layout: {
+          toolbar: true,
+          tabBar: true,
+          sidebar: false,
+          editor: true,
+          preview: true,
+          statusBar: true,
+          assistant: false,
+        },
+      });
+
+      expect(AppSession.load()).toMatchObject({
+        tabs: [],
+        activeFile: null,
+        workspaceRoot: null,
+        layout: { sidebar: false },
+      });
     });
   });
 

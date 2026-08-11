@@ -20,6 +20,7 @@ declare global {
       platform: NodeJS.Platform;
       getActiveFilePath: () => string | null;
       getAppLocale: () => string;
+      getSystemLocale: () => string;
       pathDirname: (p: string) => Promise<string>;
       resolvePath: (base: string, rel: string) => Promise<string>;
       openMkedUrl: (url: string) => Promise<string>;
