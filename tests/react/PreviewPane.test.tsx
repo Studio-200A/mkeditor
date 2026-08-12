@@ -44,6 +44,7 @@ describe('<PreviewPane>', () => {
       previewTextFontSize: 19,
       previewCodeFontSize: 15,
       previewZoom: 110,
+      previewTextWidth: 72,
     };
     const settingsProvider = {
       subscribe: jest.fn(() => () => {}),
@@ -62,6 +63,9 @@ describe('<PreviewPane>', () => {
     expect(settingsProvider.applyPreviewFonts).toHaveBeenCalled();
     expect(settingsProvider.applyPreviewFontSizes).toHaveBeenCalled();
     expect(settingsProvider.applyPreviewZoom).toHaveBeenCalled();
+    expect(document.querySelector('.preview-text-width-layer')).toHaveStyle({
+      '--mk-preview-text-width': '72%',
+    });
   });
 
   it('auto-hides the preview scrollbar 1 second after scrolling stops', () => {

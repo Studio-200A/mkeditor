@@ -26,6 +26,7 @@
   "view.layout.sidebar": "Gezgin kenar çubuğunu göster",
   "view.layout.editor": "Düzenleyiciyi göster",
   "view.layout.preview": "Önizlemeyi göster",
+  "view.layout.resetSplit": "Düzenleyici/önizleme bölmesini sıfırla",
   "view.layout.statusbar": "Durum çubuğunu göster",
   "view.layout.assistant": "Yapay zeka asistanı kenar çubuğunu göster",
   "view.layout.reset": "Düzeni sıfırla",

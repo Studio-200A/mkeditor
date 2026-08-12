@@ -240,10 +240,18 @@ export const menuModel: MenuModel = [
             action: { kind: 'channel', channel: 'from:layout:set' },
           },
           {
+            id: 'view.layout.resetSplit',
+            label: 'Reset Editor / Preview Split',
+            separatorBefore: true,
+            action: {
+              kind: 'channel',
+              channel: 'from:layout:reset-editor-preview-split',
+            },
+          },
+          {
             id: 'view.layout.statusbar',
             label: 'Show Status Bar',
             layoutPart: 'statusBar',
-            separatorBefore: true,
             action: { kind: 'channel', channel: 'from:layout:set' },
           },
           {

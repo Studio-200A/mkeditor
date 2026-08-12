@@ -4,6 +4,7 @@ import { menuModel } from '../../../app/lib/menuModel';
 import { useManagers } from '../contexts/ManagersContext';
 import { useWindowControls } from '../contexts/WindowContext';
 import { cn } from '../lib/utils';
+import { LayoutControls } from './LayoutControls';
 import { TitleBarMenu } from './TitleBar.menu';
 
 /**
@@ -127,6 +128,7 @@ export const TitleBar: React.FC = () => {
           />
         ))}
       </nav>
+      <LayoutControls className="ml-1" />
       <div className="flex-1" />
       {isDesktop && <WindowControlButtons />}
     </div>

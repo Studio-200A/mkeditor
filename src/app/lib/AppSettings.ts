@@ -56,6 +56,8 @@ export class AppSettings {
     uiZoom: 100,
     editorZoom: 100,
     previewZoom: 100,
+    editorTextWidth: 100,
+    previewTextWidth: 100,
     exportSettings: {
       withStyles: true,
       container: 'container-fluid',
@@ -97,6 +99,8 @@ export class AppSettings {
       lineNumbersMinChars: this.normalizeLineNumbersMinChars(
         loaded.lineNumbersMinChars,
       ),
+      editorTextWidth: this.normalizeContentWidth(loaded.editorTextWidth),
+      previewTextWidth: this.normalizeContentWidth(loaded.previewTextWidth),
     };
 
     // Set applied BEFORE the integrity check so that a subsequent
@@ -114,7 +118,9 @@ export class AppSettings {
         normalized.lineNumbersMinChars !== loaded.lineNumbersMinChars ||
         normalized.editorFontSize !== loaded.editorFontSize ||
         normalized.previewTextFontSize !== loaded.previewTextFontSize ||
-        normalized.previewCodeFontSize !== loaded.previewCodeFontSize)
+        normalized.previewCodeFontSize !== loaded.previewCodeFontSize ||
+        normalized.editorTextWidth !== loaded.editorTextWidth ||
+        normalized.previewTextWidth !== loaded.previewTextWidth)
     ) {
       this.saveSettingsToFile(deepMerge(this.settings, normalized));
       // saveSettingsToFile has already updated this.applied
@@ -129,6 +135,11 @@ export class AppSettings {
   private normalizeLineNumbersMinChars(raw: unknown): number {
     if (typeof raw !== 'number' || !Number.isFinite(raw)) return 5;
     return Math.min(10, Math.max(3, Math.round(raw)));
+  }
+
+  private normalizeContentWidth(raw: unknown): number {
+    if (typeof raw !== 'number' || !Number.isFinite(raw)) return 100;
+    return Math.min(100, Math.max(40, Math.round(raw)));
   }
 
   /**
@@ -224,6 +235,12 @@ export class AppSettings {
       const updated: SettingsFile = {
         ...base,
         ...settings,
+        editorTextWidth: this.normalizeContentWidth(
+          settings.editorTextWidth ?? base.editorTextWidth,
+        ),
+        previewTextWidth: this.normalizeContentWidth(
+          settings.previewTextWidth ?? base.previewTextWidth,
+        ),
         exportSettings: {
           ...base.exportSettings,
           ...(settings.exportSettings || {}),

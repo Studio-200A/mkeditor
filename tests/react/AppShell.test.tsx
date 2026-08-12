@@ -10,11 +10,8 @@
  * Children stubbed so the test stays focused on the layout gate.
  */
 
-import * as React from 'react';
-
 import { Shell } from '../../src/browser/react/App';
 import { renderWithProviders } from '../utils/render';
-import type { GroupImperativeHandle } from 'react-resizable-panels';
 
 jest.mock('../../src/browser/react/components/Sidebar', () => ({
   Sidebar: () => <div data-testid="left-sidebar-stub" />,
@@ -52,8 +49,7 @@ jest.mock('../../src/browser/i18n', () => ({
 
 describe('<Shell> — assistant pane visibility', () => {
   it('renders the assistant pane (panel-id="assistant-pane") in desktop mode', () => {
-    const groupRef = React.createRef<GroupImperativeHandle>();
-    renderWithProviders(<Shell workspaceGroupRef={groupRef} />, {
+    renderWithProviders(<Shell />, {
       managers: { mode: 'desktop' },
     });
     expect(
@@ -62,8 +58,7 @@ describe('<Shell> — assistant pane visibility', () => {
   });
 
   it('does NOT render the assistant pane in web mode (P7 decision — AI is desktop-only)', () => {
-    const groupRef = React.createRef<GroupImperativeHandle>();
-    renderWithProviders(<Shell workspaceGroupRef={groupRef} />, {
+    renderWithProviders(<Shell />, {
       managers: { mode: 'web' },
     });
     expect(

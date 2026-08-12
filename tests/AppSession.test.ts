@@ -410,6 +410,28 @@ describe('AppSession.saveWindowState', () => {
   });
 });
 
+describe('AppSession.saveRendererSession', () => {
+  it('preserves main-owned window state over stale renderer fields', () => {
+    withTempHome((tmpHome) => {
+      const AppSession = loadAppSession(tmpHome);
+      const bounds = { x: 10, y: 20, width: 800, height: 600 };
+      AppSession.save({ ...validPayload, isMaximized: false, bounds });
+
+      AppSession.saveRendererSession({
+        ...validPayload,
+        isMaximized: true,
+        bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+      });
+
+      expect(AppSession.load()).toEqual({
+        ...validPayload,
+        isMaximized: false,
+        bounds,
+      });
+    });
+  });
+});
+
 describe('AppSession.buildRestoreEnvelope', () => {
   it('returns an empty envelope when given null', () => {
     withTempHome((tmpHome) => {

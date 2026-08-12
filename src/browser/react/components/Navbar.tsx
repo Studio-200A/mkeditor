@@ -10,6 +10,7 @@ import { useCounts } from '../hooks/useCounts';
 import { useTranslation } from '../hooks/useTranslation';
 import { APP_VERSION } from '../../version';
 import { Icon } from './Icon';
+import { LayoutControls } from './LayoutControls';
 import { Button } from './ui/button';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
@@ -81,6 +82,7 @@ export const Navbar: React.FC = () => {
           )}
         </div>
         <div className="flex items-center gap-3 pr-2">
+          {mode === 'web' && <LayoutControls />}
           <div className="text-xs text-muted-foreground">
             <span>{t('navbar:character_count')}</span>{' '}
             <span id="character-count">{counts.characters}</span>

@@ -17,12 +17,14 @@ import {
 import {
   DEFAULT_LAYOUT_VISIBILITY,
   _notifyLayoutStateChange,
+  _setEditorPreviewSplitResetHandler,
   _setLayoutPartHandler,
   _setLayoutResetHandler,
   _setLayoutRestoreHandler,
   _syncLayoutMirror,
   applyRestoredLayoutState,
   getCurrentLayoutState,
+  resetEditorPreviewSplitExternal,
   resetLayoutExternal,
   setLayoutPartExternal,
   type LayoutPart,
@@ -59,6 +61,7 @@ interface UIState {
   layoutResetKey: number;
   setLayoutPart: (part: LayoutPart, visible: boolean) => void;
   resetLayout: () => void;
+  resetEditorPreviewSplit: () => void;
   /**
    * Right-sidebar size as a percentage of the outer Group, matching
    * `react-resizable-panels`. Updated by the Panel's onResize handler
@@ -74,6 +77,7 @@ const UIStateContext = React.createContext<UIState | null>(null);
 export {
   applyRestoredLayoutState,
   getCurrentLayoutState,
+  resetEditorPreviewSplitExternal,
   resetLayoutExternal,
   setLayoutPartExternal,
 };
@@ -272,6 +276,14 @@ export const UIStateProvider: React.FC<UIStateProviderProps> = ({
     _notifyLayoutStateChange(DEFAULT_LAYOUT_VISIBILITY);
   }, []);
 
+  const resetEditorPreviewSplit = React.useCallback(() => {
+    const next = { ...layoutState, editor: true, preview: true };
+    setEditorVisible(true);
+    setPreviewVisible(true);
+    setLayoutResetKey((key) => key + 1);
+    _notifyLayoutStateChange(next);
+  }, [layoutState]);
+
   React.useEffect(() => {
     _setLayoutRestoreHandler((state) => {
       const restored = {
@@ -294,11 +306,13 @@ export const UIStateProvider: React.FC<UIStateProviderProps> = ({
   React.useEffect(() => {
     _setLayoutPartHandler(setLayoutPart);
     _setLayoutResetHandler(resetLayout);
+    _setEditorPreviewSplitResetHandler(resetEditorPreviewSplit);
     return () => {
       _setLayoutPartHandler(null);
       _setLayoutResetHandler(null);
+      _setEditorPreviewSplitResetHandler(null);
     };
-  }, [resetLayout, setLayoutPart]);
+  }, [resetEditorPreviewSplit, resetLayout, setLayoutPart]);
 
   const value = React.useMemo(
     () => ({
@@ -316,6 +330,7 @@ export const UIStateProvider: React.FC<UIStateProviderProps> = ({
       layoutResetKey,
       setLayoutPart,
       resetLayout,
+      resetEditorPreviewSplit,
       rightSidebarSize,
       setRightSidebarSize,
     }),
@@ -333,6 +348,7 @@ export const UIStateProvider: React.FC<UIStateProviderProps> = ({
       layoutResetKey,
       setLayoutPart,
       resetLayout,
+      resetEditorPreviewSplit,
       rightSidebarSize,
       setRightSidebarSize,
     ],

@@ -217,4 +217,26 @@ describe('layout visibility', () => {
       rightSidebarOpen: true,
     });
   });
+
+  it('resets only the editor/preview split and restores both panes', () => {
+    const capture: Capture = { current: null };
+    render(
+      <UIStateProvider initialSidebarOpen={false}>
+        <Probe capture={capture} />
+      </UIStateProvider>,
+    );
+
+    act(() => capture.current?.setLayoutPart('toolbar', false));
+    act(() => capture.current?.setLayoutPart('preview', false));
+    const resetKey = capture.current?.layoutResetKey;
+    act(() => capture.current?.resetEditorPreviewSplit());
+
+    expect(capture.current).toMatchObject({
+      toolbarVisible: false,
+      sidebarOpen: false,
+      editorVisible: true,
+      previewVisible: true,
+      layoutResetKey: (resetKey ?? 0) + 1,
+    });
+  });
 });

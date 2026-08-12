@@ -26,6 +26,7 @@
   "view.layout.sidebar": "Показати бічну панель провідника",
   "view.layout.editor": "Показати редактор",
   "view.layout.preview": "Показати попередній перегляд",
+  "view.layout.resetSplit": "Скинути поділ редактора й перегляду",
   "view.layout.statusbar": "Показати рядок стану",
   "view.layout.assistant": "Показати бічну панель ШІ-помічника",
   "view.layout.reset": "Скинути макет",

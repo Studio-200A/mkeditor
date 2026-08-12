@@ -37,7 +37,7 @@ const groups: NavigationGroup[] = [
     labelKey: 'category_editor',
     items: [
       { page: 'editor.formatting', labelKey: 'formatting' },
-      { page: 'editor.editing', labelKey: 'editing' },
+      { page: 'editor.editing', labelKey: 'editor_ui' },
       { page: 'editor.fonts', labelKey: 'fonts' },
     ],
   },

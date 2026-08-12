@@ -4,6 +4,7 @@
 // live preview always matches the export.
 
 #preview {
+  container-type: inline-size;
   height: 100%;
   overflow-y: auto;
   padding-bottom: 44px !important;
@@ -51,5 +52,16 @@
       width: 0;
       height: 0;
     }
+  }
+}
+
+.preview-text-width-layer {
+  width: var(--mk-preview-text-width, 100%);
+  margin-inline: auto;
+}
+
+@container (max-width: 320px) {
+  .preview-text-width-layer {
+    width: 100%;
   }
 }

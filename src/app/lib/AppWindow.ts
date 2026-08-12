@@ -35,9 +35,11 @@ export class AppWindow {
     handler: (...args: unknown[]) => void;
   }> = [];
   private saveBoundsTimer: ReturnType<typeof setTimeout> | null = null;
+  private isMaximized: boolean;
 
   constructor(context: BrowserWindow, register = false) {
     this.context = context;
+    this.isMaximized = context.isMaximized();
     if (register) this.register();
   }
 
@@ -49,7 +51,7 @@ export class AppWindow {
 
     this.on('to:window:maximize', () => {
       if (this.context.isDestroyed()) return;
-      if (this.context.isMaximized()) {
+      if (this.isMaximized) {
         this.context.unmaximize();
       } else {
         this.context.maximize();
@@ -89,10 +91,12 @@ export class AppWindow {
     });
 
     this.context.on('maximize', () => {
+      this.isMaximized = true;
       this.emitState(true);
       this.saveWindowState();
     });
     this.context.on('unmaximize', () => {
+      this.isMaximized = false;
       this.emitState(false);
       this.saveWindowState();
     });
@@ -142,7 +146,7 @@ export class AppWindow {
     this.listeners = [];
   }
 
-  private emitState(isMaximized = this.context.isMaximized()): void {
+  private emitState(isMaximized = this.isMaximized): void {
     if (this.context.isDestroyed()) return;
     this.context.webContents.send('from:window:state', {
       isMaximized,
@@ -158,10 +162,10 @@ export class AppWindow {
     }, 300);
   }
 
-  private saveWindowState(): void {
+  public saveWindowState(): void {
     if (this.context.isDestroyed()) return;
     AppSession.saveWindowState(
-      this.context.isMaximized(),
+      this.isMaximized,
       this.context.getNormalBounds(),
     );
   }

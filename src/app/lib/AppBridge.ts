@@ -143,13 +143,10 @@ export class AppBridge {
 
     // Persist the renderer's open-tab / cursor / scroll session. Fired
     // by the renderer's debounced session save trigger and by the
-    // renderer's flush-request handler during quit.
+    // renderer's flush-request handler during quit. Window state is owned
+    // by AppWindow and must not be overwritten by renderer timing.
     this.on('to:session:save', (_event, payload: SessionPayload) => {
-      AppSession.save({
-        ...payload,
-        isMaximized: this.context.isMaximized(),
-        bounds: this.context.getNormalBounds(),
-      });
+      AppSession.saveRendererSession(payload);
     });
 
     // Wipe the persisted session file. Fired by the renderer's

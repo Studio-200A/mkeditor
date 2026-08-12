@@ -60,6 +60,8 @@ function fakeSettingsProvider(initial: Partial<EditorSettings> = {}) {
     uiZoom: 100,
     editorZoom: 100,
     previewZoom: 100,
+    editorTextWidth: 100,
+    previewTextWidth: 100,
     ...initial,
   };
   let snapshot: EditorSettings = { ...state };
@@ -356,7 +358,7 @@ describe('<SettingsModal>', () => {
     const dialog = await screen.findByRole('dialog');
     fireEvent.click(
       within(dialog).getByRole('button', {
-        name: 'modals-settings:editing',
+        name: 'modals-settings:editor_ui',
       }),
     );
     const width = within(dialog).getByLabelText(

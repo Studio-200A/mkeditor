@@ -64,7 +64,21 @@ export const EditorSettings: React.FC<{
 
   if (page === 'editor.editing') {
     return (
-      <SettingsPageLayout title={t('modals-settings:editing')}>
+      <SettingsPageLayout title={t('modals-settings:editor_ui')}>
+        <WidthSlider
+          id="editor-text-width-setting"
+          label={t('modals-settings:editor_text_width_label')}
+          help={t('modals-settings:editor_text_width_help')}
+          value={settings.editorTextWidth}
+          onChange={(value) => updateSetting('editorTextWidth', value)}
+        />
+        <WidthSlider
+          id="preview-text-width-setting"
+          label={t('modals-settings:preview_text_width_label')}
+          help={t('modals-settings:preview_text_width_help')}
+          value={settings.previewTextWidth}
+          onChange={(value) => updateSetting('previewTextWidth', value)}
+        />
         <CheckboxRow
           id="whitespace-setting"
           label={t('modals-settings:whitespace_label')}
@@ -189,6 +203,36 @@ export const EditorSettings: React.FC<{
     </SettingsPageLayout>
   );
 };
+
+const WidthSlider: React.FC<{
+  id: string;
+  label: string;
+  help: string;
+  value: number;
+  onChange: (value: number) => void;
+}> = ({ id, label, help, value, onChange }) => (
+  <div className="flex max-w-md flex-col gap-2">
+    <div className="flex items-center justify-between gap-4">
+      <Label htmlFor={id}>{label}</Label>
+      <output
+        htmlFor={id}
+        className="text-xs tabular-nums text-muted-foreground"
+      >
+        {value}%
+      </output>
+    </div>
+    <Input
+      id={id}
+      type="range"
+      min={40}
+      max={100}
+      step={1}
+      value={value}
+      onChange={(event) => onChange(Number(event.target.value))}
+    />
+    <small className="text-muted-foreground">{help}</small>
+  </div>
+);
 
 const FontField: React.FC<{
   title: string;

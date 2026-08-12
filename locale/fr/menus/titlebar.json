@@ -26,6 +26,7 @@
   "view.layout.sidebar": "Afficher la barre latérale de l'explorateur",
   "view.layout.editor": "Afficher l'éditeur",
   "view.layout.preview": "Afficher l'aperçu",
+  "view.layout.resetSplit": "Réinitialiser la séparation éditeur/aperçu",
   "view.layout.statusbar": "Afficher la barre d'état",
   "view.layout.assistant": "Afficher la barre latérale de l'assistant IA",
   "view.layout.reset": "Réinitialiser la disposition",

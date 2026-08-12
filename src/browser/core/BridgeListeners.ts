@@ -35,6 +35,7 @@ import {
 import {
   DEFAULT_LAYOUT_VISIBILITY,
   applyRestoredLayoutState,
+  resetEditorPreviewSplitExternal,
   resetLayoutExternal,
   setLayoutPartExternal,
   type LayoutPart,
@@ -347,6 +348,9 @@ export function registerBridgeListeners(
     },
   );
   bridge.receive('from:layout:reset', () => resetLayoutExternal());
+  bridge.receive('from:layout:reset-editor-preview-split', () =>
+    resetEditorPreviewSplitExternal(),
+  );
 
   // ---- AI Assistant ----------------------------------------------
   //

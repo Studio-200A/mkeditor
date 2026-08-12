@@ -164,6 +164,32 @@ describe('<TitleBar>', () => {
     expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument();
   });
 
+  it('renders layout controls and prevents hiding the final workspace pane', () => {
+    renderTitleBar();
+    const editor = screen.getByRole('button', { name: 'Show Editor' });
+    const preview = screen.getByRole('button', { name: 'Show Preview' });
+
+    expect(editor).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(editor);
+    expect(editor).toHaveAttribute('aria-pressed', 'false');
+    expect(preview).toBeDisabled();
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Reset Editor / Preview Split' }),
+    );
+    expect(editor).toHaveAttribute('aria-pressed', 'true');
+    expect(preview).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('places layout controls immediately after the menu strip', () => {
+    renderTitleBar();
+    const bar = screen.getByTestId('title-bar');
+    const nav = bar.querySelector('nav');
+    const editor = screen.getByRole('button', { name: 'Show Editor' });
+
+    expect(nav?.nextElementSibling).toContainElement(editor);
+  });
+
   it('renders nothing on web (desktop-only surface)', () => {
     const { container } = renderTitleBar({ mode: 'web', platform: 'web' });
     expect(screen.queryByTestId('title-bar' as never)).not.toBeInTheDocument();

@@ -15,6 +15,8 @@
 - **Session v4**: `~/.mkeditor/session.json` persists tabs, workspace, Monaco view states, assistant size, seven-region layout visibility, normal bounds, and maximized state. Readers accept v1–v4; writers use atomic replacement and stamp v4.
 - **Zero-tab workspace**: Startup and closing the final tab now show a “No open tabs” overlay with an explicit New File action instead of automatically creating or exposing a welcome/Untitled buffer.
 - **Status-bar actions**: The bottom status bar includes file/count information, settings, shortcuts, AI, theme, and a clickable version that opens About.
+- **Title-bar layout controls**: Explorer, editor, preview, and 50/50 split controls now live in the Windows/Linux title bar, with native-menu and web status-bar fallbacks.
+- **Content width controls**: Editor UI settings independently center editor and live-preview content from 40–100% without changing exported HTML.
 
 #### Changed
 

@@ -17,6 +17,7 @@ let restoreHandler: ((state: LayoutVisibility) => void) | null = null;
 let setPartHandler: ((part: LayoutPart, visible: boolean) => void) | null =
   null;
 let resetHandler: (() => void) | null = null;
+let resetEditorPreviewSplitHandler: (() => void) | null = null;
 let changeListener: (() => void) | null = null;
 
 export function getCurrentLayoutState(): LayoutVisibility {
@@ -36,6 +37,10 @@ export function setLayoutPartExternal(
 
 export function resetLayoutExternal(): void {
   resetHandler?.();
+}
+
+export function resetEditorPreviewSplitExternal(): void {
+  resetEditorPreviewSplitHandler?.();
 }
 
 export function registerLayoutStateChangeListener(fn: () => void): void {
@@ -60,6 +65,12 @@ export function _setLayoutPartHandler(
 
 export function _setLayoutResetHandler(fn: (() => void) | null): void {
   resetHandler = fn;
+}
+
+export function _setEditorPreviewSplitResetHandler(
+  fn: (() => void) | null,
+): void {
+  resetEditorPreviewSplitHandler = fn;
 }
 
 export function _syncLayoutMirror(state: LayoutVisibility): void {

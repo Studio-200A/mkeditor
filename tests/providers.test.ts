@@ -251,6 +251,8 @@ describe('SettingsProvider.loadSettingsFromLocalStorage (web)', () => {
       uiZoom: 100,
       editorZoom: 100,
       previewZoom: 100,
+      editorTextWidth: 100,
+      previewTextWidth: 100,
     };
     localStorage.setItem('mkeditor-settings', JSON.stringify(full));
 
@@ -266,6 +268,35 @@ describe('SettingsProvider.loadSettingsFromLocalStorage (web)', () => {
     // No upgrade-persist write should have fired.
     expect(setItemSpy).not.toHaveBeenCalled();
     setItemSpy.mockRestore();
+  });
+
+  it('clamps content widths and debounces slider persistence', () => {
+    jest.useFakeTimers();
+    try {
+      const dispatcher = new EditorDispatcher();
+      const mkeditor = new EditorManager({
+        dispatcher,
+        init: true,
+        watch: false,
+      });
+      const provider = new SettingsProvider('web', mkeditor.getMkEditor()!);
+      const setItemSpy = jest.spyOn(Storage.prototype, 'setItem');
+
+      provider.updateSetting('editorTextWidth', 20);
+      provider.updateSetting('editorTextWidth', 75);
+
+      expect(provider.getSetting('editorTextWidth')).toBe(75);
+      expect(setItemSpy).not.toHaveBeenCalled();
+      jest.advanceTimersByTime(250);
+      expect(setItemSpy).toHaveBeenCalledTimes(1);
+      expect(
+        JSON.parse(localStorage.getItem('mkeditor-settings') as string)
+          .editorTextWidth,
+      ).toBe(75);
+      setItemSpy.mockRestore();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('applies scrollbar visibility and keeps auto scrollbars visible for 1 second', () => {

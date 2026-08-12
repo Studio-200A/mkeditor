@@ -162,6 +162,20 @@ export class AppSession {
     });
   }
 
+  /** Persist renderer-owned session data without clobbering window state. */
+  static saveRendererSession(payload: SessionPayload): void {
+    const current = AppSession.load();
+    const merged = { ...payload };
+    if (current?.isMaximized !== undefined) {
+      merged.isMaximized = current.isMaximized;
+    } else {
+      delete merged.isMaximized;
+    }
+    if (current?.bounds) merged.bounds = current.bounds;
+    else delete merged.bounds;
+    AppSession.save(merged);
+  }
+
   /**
    * Remove the persisted session file (and any leftover tmp from a
    * crashed write). Used by the renderer's "Clear saved session"

@@ -33,6 +33,8 @@ export interface EditorSettings {
   uiZoom: number;
   editorZoom: number;
   previewZoom: number;
+  editorTextWidth: number;
+  previewTextWidth: number;
 }
 
 export interface ExportSettings {

@@ -18,9 +18,6 @@ import { EditorPaneDiffOverlay } from './EditorPaneDiffOverlay';
 import { PreviewPane } from './PreviewPane';
 
 interface WorkspaceProps {
-  /** Shared ref owned by <App>; <EditorToolbar>'s split-reset button calls
-   * `groupRef.current.setLayout({...})` directly via the same ref. */
-  groupRef: React.Ref<GroupImperativeHandle | null>;
   onEditorReady?: () => void;
 }
 
@@ -29,14 +26,9 @@ interface WorkspaceProps {
  * (Group + Panel + Separator). Panel.onResize fires
  * `editorManager.layout()` so Monaco reflows on every drag tick.
  *
- * React `<EditorToolbar>` owns the split-reset button and calls
- * `groupRef.current.setLayout(...)` directly through the ref that <App>
- * passes here.
+ * UIStateContext increments `layoutResetKey` to request a 50/50 reset.
  */
-export const Workspace: React.FC<WorkspaceProps> = ({
-  groupRef,
-  onEditorReady,
-}) => {
+export const Workspace: React.FC<WorkspaceProps> = ({ onEditorReady }) => {
   const { editorManager, bridgeManager } = useManagers();
   const { tabs } = useFiles();
   const { t } = useTranslation();
@@ -48,15 +40,6 @@ export const Workspace: React.FC<WorkspaceProps> = ({
   });
   const previousVisibility = React.useRef({ editor: true, preview: true });
   const previousResetKey = React.useRef(layoutResetKey);
-
-  const setGroupRef = React.useCallback(
-    (handle: GroupImperativeHandle | null) => {
-      internalGroupRef.current = handle;
-      if (typeof groupRef === 'function') groupRef(handle);
-      else if (groupRef) groupRef.current = handle;
-    },
-    [groupRef],
-  );
 
   React.useEffect(() => {
     const group = internalGroupRef.current;
@@ -97,7 +80,11 @@ export const Workspace: React.FC<WorkspaceProps> = ({
   }, [bridgeManager]);
 
   return (
-    <Group orientation="horizontal" id="editor-preview" groupRef={setGroupRef}>
+    <Group
+      orientation="horizontal"
+      id="editor-preview"
+      groupRef={internalGroupRef}
+    >
       <Panel
         id="editor-pane"
         onResize={() => editorManager?.layout()}

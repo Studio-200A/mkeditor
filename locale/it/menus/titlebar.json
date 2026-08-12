@@ -26,6 +26,7 @@
   "view.layout.sidebar": "Mostra barra laterale Esplora risorse",
   "view.layout.editor": "Mostra editor",
   "view.layout.preview": "Mostra anteprima",
+  "view.layout.resetSplit": "Reimposta divisione editor/anteprima",
   "view.layout.statusbar": "Mostra barra di stato",
   "view.layout.assistant": "Mostra barra laterale assistente IA",
   "view.layout.reset": "Reimposta layout",

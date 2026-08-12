@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { screen, fireEvent } from '@testing-library/react';
 
 import { EditorToolbar } from '../../src/browser/react/components/EditorToolbar';
@@ -53,65 +52,11 @@ function fakeEditorManager() {
 }
 
 describe('<EditorToolbar>', () => {
-  const workspaceGroupRef = React.createRef<{
-    setLayout: (sizes: Record<string, number>) => void;
-  }>();
-
   it('the bold button calls CommandProvider.editInline with `**`', () => {
     const commands = fakeCommandProvider();
     const editorManager = fakeEditorManager();
 
-    renderWithProviders(
-      <EditorToolbar workspaceGroupRef={workspaceGroupRef as any} />,
-      {
-        managers: {
-          editorManager: editorManager as any,
-          providers: {
-            bridge: null,
-            completion: null,
-            settings: null,
-            exportSettings: null,
-            commands: commands as any,
-          },
-        },
-      },
-    );
-
-    fireEvent.click(screen.getByTitle('toolbar:bold_tooltip'));
-    expect(commands.editInline).toHaveBeenCalledWith('**');
-  });
-
-  it('the unordered-list button calls CommandProvider.unorderedList', () => {
-    const commands = fakeCommandProvider();
-    const editorManager = fakeEditorManager();
-
-    renderWithProviders(
-      <EditorToolbar workspaceGroupRef={workspaceGroupRef as any} />,
-      {
-        managers: {
-          editorManager: editorManager as any,
-          providers: {
-            bridge: null,
-            completion: null,
-            settings: null,
-            exportSettings: null,
-            commands: commands as any,
-          },
-        },
-      },
-    );
-
-    fireEvent.click(screen.getByTitle('toolbar:unordered_list_tooltip'));
-    expect(commands.unorderedList).toHaveBeenCalled();
-  });
-
-  it('the reset-split button calls setLayout on the workspace Group ref', () => {
-    const commands = fakeCommandProvider();
-    const editorManager = fakeEditorManager();
-    const setLayout = jest.fn();
-    const ref = { current: { setLayout } };
-
-    renderWithProviders(<EditorToolbar workspaceGroupRef={ref as any} />, {
+    renderWithProviders(<EditorToolbar />, {
       managers: {
         editorManager: editorManager as any,
         providers: {
@@ -124,32 +69,69 @@ describe('<EditorToolbar>', () => {
       },
     });
 
-    fireEvent.click(screen.getByTitle('toolbar:reset_split'));
-    expect(setLayout).toHaveBeenCalledWith({
-      'editor-pane': 50,
-      'preview-pane': 50,
+    fireEvent.click(screen.getByTitle('toolbar:bold_tooltip'));
+    expect(commands.editInline).toHaveBeenCalledWith('**');
+  });
+
+  it('the unordered-list button calls CommandProvider.unorderedList', () => {
+    const commands = fakeCommandProvider();
+    const editorManager = fakeEditorManager();
+
+    renderWithProviders(<EditorToolbar />, {
+      managers: {
+        editorManager: editorManager as any,
+        providers: {
+          bridge: null,
+          completion: null,
+          settings: null,
+          exportSettings: null,
+          commands: commands as any,
+        },
+      },
     });
+
+    fireEvent.click(screen.getByTitle('toolbar:unordered_list_tooltip'));
+    expect(commands.unorderedList).toHaveBeenCalled();
+  });
+
+  it('does not render layout controls', () => {
+    const commands = fakeCommandProvider();
+    const editorManager = fakeEditorManager();
+    renderWithProviders(<EditorToolbar />, {
+      managers: {
+        editorManager: editorManager as any,
+        providers: {
+          bridge: null,
+          completion: null,
+          settings: null,
+          exportSettings: null,
+          commands: commands as any,
+        },
+      },
+    });
+
+    expect(screen.queryByTitle('toolbar:reset_split')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTitle('navbar:toggle_sidebar'),
+    ).not.toBeInTheDocument();
   });
 
   it('registers itself as the CommandProvider dropdown opener on mount', () => {
     const commands = fakeCommandProvider();
     const editorManager = fakeEditorManager();
 
-    renderWithProviders(
-      <EditorToolbar workspaceGroupRef={workspaceGroupRef as any} />,
-      {
-        managers: {
-          editorManager: editorManager as any,
-          providers: {
-            bridge: null,
-            completion: null,
-            settings: null,
-            exportSettings: null,
-            commands: commands as any,
-          },
+    renderWithProviders(<EditorToolbar />, {
+      managers: {
+        editorManager: editorManager as any,
+        providers: {
+          bridge: null,
+          completion: null,
+          settings: null,
+          exportSettings: null,
+          commands: commands as any,
         },
       },
-    );
+    });
 
     expect(commands.setOpenDropdown).toHaveBeenCalledWith(expect.any(Function));
   });

@@ -122,7 +122,6 @@ describe('AppWindow', () => {
 
   it('to:window:maximize toggles based on current state', () => {
     const win = makeMockWindow();
-    win.isMaximized.mockReturnValueOnce(false).mockReturnValueOnce(true);
     new AppWindow(win as never, true);
     const handler = getIpcHandler('to:window:maximize');
 
@@ -130,6 +129,7 @@ describe('AppWindow', () => {
     expect(win.maximize).toHaveBeenCalledTimes(1);
     expect(win.unmaximize).not.toHaveBeenCalled();
 
+    win.fireEvent('maximize');
     handler(fakeIpcEvent());
     expect(win.unmaximize).toHaveBeenCalledTimes(1);
     expect(win.maximize).toHaveBeenCalledTimes(1);
@@ -215,6 +215,23 @@ describe('AppWindow', () => {
     const win = makeMockWindow();
     new AppWindow(win as never, true);
     win.fireEvent('close');
+    expect(AppSession.saveWindowState).toHaveBeenCalledWith(false, {
+      x: 10,
+      y: 20,
+      width: 800,
+      height: 600,
+    });
+  });
+
+  it('persists the unmaximize event state even if Electron still reports maximized', () => {
+    const win = makeMockWindow();
+    win.isMaximized.mockReturnValue(true);
+    const appWindow = new AppWindow(win as never, true);
+
+    win.fireEvent('unmaximize');
+    (AppSession.saveWindowState as jest.Mock).mockClear();
+    appWindow.saveWindowState();
+
     expect(AppSession.saveWindowState).toHaveBeenCalledWith(false, {
       x: 10,
       y: 20,

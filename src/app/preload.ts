@@ -81,6 +81,7 @@ const receiverWhitelist = [
   'from:window:state',
   'from:layout:set',
   'from:layout:reset',
+  'from:layout:reset-editor-preview-split',
   // AI Assistant — streaming chunks / tool calls / done / error / config
   'from:ai:chunk',
   'from:ai:tool-call',

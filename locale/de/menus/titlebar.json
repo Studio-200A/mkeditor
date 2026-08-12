@@ -26,6 +26,7 @@
   "view.layout.sidebar": "Explorer-Seitenleiste anzeigen",
   "view.layout.editor": "Editor anzeigen",
   "view.layout.preview": "Vorschau anzeigen",
+  "view.layout.resetSplit": "Editor-/Vorschauaufteilung zurücksetzen",
   "view.layout.statusbar": "Statusleiste anzeigen",
   "view.layout.assistant": "KI-Assistent-Seitenleiste anzeigen",
   "view.layout.reset": "Layout zurücksetzen",

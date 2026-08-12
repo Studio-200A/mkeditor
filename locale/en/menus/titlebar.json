@@ -26,6 +26,7 @@
   "view.layout.sidebar": "Show Explorer Sidebar",
   "view.layout.editor": "Show Editor",
   "view.layout.preview": "Show Preview",
+  "view.layout.resetSplit": "Reset Editor / Preview Split",
   "view.layout.statusbar": "Show Status Bar",
   "view.layout.assistant": "Show AI Assistant Sidebar",
   "view.layout.reset": "Reset Layout",

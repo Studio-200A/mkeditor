@@ -1,5 +1,4 @@
 import * as React from 'react';
-import type { GroupImperativeHandle } from 'react-resizable-panels';
 
 import { HTMLExporter } from '../../core/HTMLExporter';
 import { exportSettings as exportSettingsDefaults } from '../../config';
@@ -8,7 +7,6 @@ import type { ToolbarDropdownKey } from '../../core/providers/CommandProvider';
 import { dom } from '../../dom';
 import { useManagers } from '../contexts/ManagersContext';
 import { useModals } from '../contexts/ModalsContext';
-import { useUIState } from '../contexts/UIStateContext';
 import { useTranslation } from '../hooks/useTranslation';
 import { Icon } from './Icon';
 import { Button } from './ui/button';
@@ -16,17 +14,10 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 
-interface EditorToolbarProps {
-  /** Shared with <Workspace>; used by the split-reset button. */
-  workspaceGroupRef: React.RefObject<GroupImperativeHandle | null>;
-}
-
 /**
  * The `#editor-functions` toolbar.
  */
-export const EditorToolbar: React.FC<EditorToolbarProps> = ({
-  workspaceGroupRef,
-}) => {
+export const EditorToolbar: React.FC = () => {
   const { mode, editorManager, bridgeManager, providers } = useManagers();
   const { openModal } = useModals();
   const { t } = useTranslation();
@@ -53,12 +44,6 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
     commands.setOpenDropdown(setOpenDropdown);
     return () => commands.setOpenDropdown(null);
   }, [providers.commands]);
-
-  const handleResetSplit = () =>
-    workspaceGroupRef.current?.setLayout({
-      'editor-pane': 50,
-      'preview-pane': 50,
-    });
 
   const inline = (syntax: string) => () => {
     providers.commands?.editInline(syntax);
@@ -116,23 +101,9 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
   const openExportSettingsModal = () => openModal('exportSettings');
   const handleDelete = () => editorManager?.resetContent();
-  const { toggleSidebar } = useUIState();
 
   return (
     <div className="flex items-center gap-1 border-b border-border bg-background px-2">
-      <ToolbarButton onClick={toggleSidebar} title={t('navbar:toggle_sidebar')}>
-        <Icon name="bars" />
-      </ToolbarButton>
-      <Separator />
-      <ToolbarButton
-        title={t('toolbar:reset_split')}
-        onClick={handleResetSplit}
-      >
-        <Icon name="table-columns" />
-      </ToolbarButton>
-
-      <Separator />
-
       <ToolbarButton title={t('toolbar:bold_tooltip')} onClick={inline('**')}>
         <Icon name="bold" />
       </ToolbarButton>

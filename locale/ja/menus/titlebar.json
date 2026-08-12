@@ -26,6 +26,7 @@
   "view.layout.sidebar": "エクスプローラーサイドバーを表示",
   "view.layout.editor": "エディターを表示",
   "view.layout.preview": "プレビューを表示",
+  "view.layout.resetSplit": "エディター/プレビュー分割をリセット",
   "view.layout.statusbar": "ステータスバーを表示",
   "view.layout.assistant": "AI アシスタントサイドバーを表示",
   "view.layout.reset": "レイアウトをリセット",

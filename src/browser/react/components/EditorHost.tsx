@@ -1,6 +1,7 @@
 import * as React from 'react';
 
 import { useManagers } from '../contexts/ManagersContext';
+import { useSettings } from '../contexts/SettingsContext';
 
 interface EditorHostProps {
   /**
@@ -13,6 +14,7 @@ interface EditorHostProps {
 
 export const EditorHost: React.FC<EditorHostProps> = ({ onReady }) => {
   const { editorManager } = useManagers();
+  const { settings } = useSettings();
   const mountRef = React.useRef<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
@@ -38,11 +40,22 @@ export const EditorHost: React.FC<EditorHostProps> = ({ onReady }) => {
   }, [editorManager, onReady]);
 
   return (
-    <div
-      ref={mountRef}
-      id="editor"
-      className="flex flex-col split-editor"
-      data-testid="editor-host"
-    />
+    <div className="editor-width-container h-full w-full">
+      <div
+        className="editor-width-surface h-full"
+        style={
+          {
+            '--mk-editor-text-width': `${settings.editorTextWidth}%`,
+          } as React.CSSProperties
+        }
+      >
+        <div
+          ref={mountRef}
+          id="editor"
+          className="flex flex-col split-editor"
+          data-testid="editor-host"
+        />
+      </div>
+    </div>
   );
 };

@@ -49,6 +49,8 @@ export const settings: EditorSettings = {
   uiZoom: 100,
   editorZoom: 100,
   previewZoom: 100,
+  editorTextWidth: 100,
+  previewTextWidth: 100,
 };
 
 /**

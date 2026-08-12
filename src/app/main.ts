@@ -78,6 +78,7 @@ protocol.registerSchemesAsPrivileged([
 /** --------------------App Entry--------------------------------- */
 
 let context: BrowserWindow | null;
+let appWindow: AppWindow | null = null;
 
 /**
  * Main entry point for MKEditor app.
@@ -203,8 +204,7 @@ function main(file: string | null = null) {
   // bar sends `to:window:minimize/maximize/close` here; `from:window:state`
   // hydrates the renderer with the initial maximize state on did-finish-load
   // and replays on every maximize/unmaximize.
-  const window = new AppWindow(context, true);
-  void window; // referenced to keep the instance alive alongside `context`
+  appWindow = new AppWindow(context, true);
 
   // Configure the app's tray icon and context menu
   const tray = new Tray(nativeImage.createFromDataURL(iconBase64()));
@@ -280,6 +280,7 @@ function main(file: string | null = null) {
     if (rendererReadyTimeout) clearTimeout(rendererReadyTimeout);
     ipcMain.removeListener('to:renderer:ready', handleRendererReady);
     nativeTheme.off('updated', handleNativeThemeUpdated);
+    appWindow = null;
     context = null;
   });
 }
@@ -304,17 +305,6 @@ function applyUiZoom(context: BrowserWindow, raw: unknown): void {
  * session.json so the next launch can restore them. Merges with
  * the existing session content; only touches bounds/isMaximized.
  */
-function saveWindowStateToSession(context: BrowserWindow): void {
-  try {
-    AppSession.saveWindowState(
-      context.isMaximized(),
-      context.getNormalBounds(),
-    );
-  } catch {
-    // best-effort
-  }
-}
-
 /** --------------------App Lifecycle ---------------------------- */
 
 // If the app is already running then handle it.
@@ -400,7 +390,7 @@ app.on('before-quit', (event) => {
 
   // Save window geometry to session.json so the next launch can
   // restore the exact window position and size.
-  saveWindowStateToSession(context);
+  appWindow?.saveWindowState();
 
   // Two flush requests fan out in parallel — session (FileManager
   // tabs + cursor) and AI conversations. We resolve when BOTH ack

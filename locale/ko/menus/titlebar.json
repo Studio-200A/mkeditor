@@ -26,6 +26,7 @@
   "view.layout.sidebar": "탐색기 사이드바 표시",
   "view.layout.editor": "편집기 표시",
   "view.layout.preview": "미리 보기 표시",
+  "view.layout.resetSplit": "편집기/미리 보기 분할 초기화",
   "view.layout.statusbar": "상태 표시줄 표시",
   "view.layout.assistant": "AI 도우미 사이드바 표시",
   "view.layout.reset": "레이아웃 초기화",

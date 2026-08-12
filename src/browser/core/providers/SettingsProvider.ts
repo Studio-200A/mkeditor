@@ -64,6 +64,8 @@ export class SettingsProvider {
   /** Extends Monaco's native 500ms auto-hide period to the requested 1000ms. */
   private scrollbarHideTimer: number | null = null;
 
+  private contentWidthPersistTimer: number | null = null;
+
   /**
    * Create a new editor settings handler.
    */
@@ -133,6 +135,8 @@ export class SettingsProvider {
       lineNumbersMinChars: this.sanitizeLineNumbersMinChars(
         next.lineNumbersMinChars,
       ),
+      editorTextWidth: this.sanitizeContentWidth(next.editorTextWidth),
+      previewTextWidth: this.sanitizeContentWidth(next.previewTextWidth),
     };
     this.applyAll();
     this.emit();
@@ -174,10 +178,17 @@ export class SettingsProvider {
       const fallback = key === 'previewTextFontSize' ? 16 : 14;
       value = this.sanitizeFontSize(value, fallback) as EditorSettings[K];
     }
+    if (key === 'editorTextWidth' || key === 'previewTextWidth') {
+      value = this.sanitizeContentWidth(value) as EditorSettings[K];
+    }
     this.currentSettings[key] = value;
     this.applyOne(key);
     this.emit();
-    this.persist();
+    if (key === 'editorTextWidth' || key === 'previewTextWidth') {
+      this.scheduleContentWidthPersist();
+    } else {
+      this.persist();
+    }
   }
 
   /** Apply Monaco / theme side effects for one setting key. */
@@ -295,6 +306,8 @@ export class SettingsProvider {
         lineNumbersMinChars: this.sanitizeLineNumbersMinChars(
           parsed.lineNumbersMinChars,
         ),
+        editorTextWidth: this.sanitizeContentWidth(parsed.editorTextWidth),
+        previewTextWidth: this.sanitizeContentWidth(parsed.previewTextWidth),
       };
       // If the merge filled in any missing keys, persist the upgraded
       // shape so future loads don't repeat the work.
@@ -305,7 +318,10 @@ export class SettingsProvider {
         parsed.editorFontSize !== this.currentSettings.editorFontSize ||
         parsed.previewTextFontSize !==
           this.currentSettings.previewTextFontSize ||
-        parsed.previewCodeFontSize !== this.currentSettings.previewCodeFontSize;
+        parsed.previewCodeFontSize !==
+          this.currentSettings.previewCodeFontSize ||
+        parsed.editorTextWidth !== this.currentSettings.editorTextWidth ||
+        parsed.previewTextWidth !== this.currentSettings.previewTextWidth;
       if (upgraded) this.updateSettingsInLocalStorage();
     } catch {
       this.setDefaultSettings();
@@ -326,11 +342,25 @@ export class SettingsProvider {
 
   /** Persist via localStorage (web) or the IPC bridge (desktop). */
   private persist() {
+    if (this.contentWidthPersistTimer !== null) {
+      window.clearTimeout(this.contentWidthPersistTimer);
+      this.contentWidthPersistTimer = null;
+    }
     if (this.mode === 'web') {
       this.updateSettingsInLocalStorage();
     } else {
       this.persistHandler?.(this.currentSettings);
     }
+  }
+
+  private scheduleContentWidthPersist() {
+    if (this.contentWidthPersistTimer !== null) {
+      window.clearTimeout(this.contentWidthPersistTimer);
+    }
+    this.contentWidthPersistTimer = window.setTimeout(() => {
+      this.contentWidthPersistTimer = null;
+      this.persist();
+    }, 250);
   }
 
   // ---------------------------------------------------------------------
@@ -507,6 +537,11 @@ export class SettingsProvider {
   private sanitizeFontSize(raw: unknown, fallback: number): number {
     if (typeof raw !== 'number' || !Number.isFinite(raw)) return fallback;
     return Math.min(72, Math.max(9, Math.round(raw)));
+  }
+
+  private sanitizeContentWidth(raw: unknown): number {
+    if (typeof raw !== 'number' || !Number.isFinite(raw)) return 100;
+    return Math.min(100, Math.max(40, Math.round(raw)));
   }
 
   // ---------------------------------------------------------------------

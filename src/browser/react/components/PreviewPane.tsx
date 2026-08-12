@@ -212,10 +212,19 @@ export const PreviewPane: React.FC = () => {
     >
       <div ref={zoomLayerRef} className="preview-zoom-layer">
         <div
-          ref={contentRef}
-          id="preview-content"
-          className="container-fluid"
-        />
+          className="preview-text-width-layer"
+          style={
+            {
+              '--mk-preview-text-width': `${settings.previewTextWidth}%`,
+            } as React.CSSProperties
+          }
+        >
+          <div
+            ref={contentRef}
+            id="preview-content"
+            className="container-fluid"
+          />
+        </div>
       </div>
     </div>
   );

@@ -26,6 +26,7 @@
   "view.layout.sidebar": "Verkennerzijbalk weergeven",
   "view.layout.editor": "Editor weergeven",
   "view.layout.preview": "Voorbeeld weergeven",
+  "view.layout.resetSplit": "Editor-/voorbeeldverdeling herstellen",
   "view.layout.statusbar": "Statusbalk weergeven",
   "view.layout.assistant": "AI-assistentzijbalk weergeven",
   "view.layout.reset": "Indeling herstellen",

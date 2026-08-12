@@ -26,6 +26,7 @@
   "view.layout.sidebar": "Mostrar barra lateral del explorador",
   "view.layout.editor": "Mostrar editor",
   "view.layout.preview": "Mostrar vista previa",
+  "view.layout.resetSplit": "Restablecer división editor/vista previa",
   "view.layout.statusbar": "Mostrar barra de estado",
   "view.layout.assistant": "Mostrar barra lateral del asistente de IA",
   "view.layout.reset": "Restablecer diseño",

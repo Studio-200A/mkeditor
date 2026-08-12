@@ -95,7 +95,8 @@ const MenuRow: React.FC<{ item: MenuItem; first: boolean }> = ({
     : '';
   const isLayoutReset =
     item.action?.kind === 'channel' &&
-    item.action.channel === 'from:layout:reset';
+    (item.action.channel === 'from:layout:reset' ||
+      item.action.channel === 'from:layout:reset-editor-preview-split');
   return (
     <>
       {item.separatorBefore && !first && <DropdownMenuSeparator />}
@@ -138,6 +139,11 @@ const MenuRow: React.FC<{ item: MenuItem; first: boolean }> = ({
               item.action.channel === 'from:layout:reset'
             ) {
               layout.resetLayout();
+            } else if (
+              item.action?.kind === 'channel' &&
+              item.action.channel === 'from:layout:reset-editor-preview-split'
+            ) {
+              layout.resetEditorPreviewSplit();
             } else if (item.action) {
               dispatchMenuActionExternal(item.action);
             }

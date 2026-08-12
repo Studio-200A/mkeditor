@@ -26,6 +26,7 @@
   "view.layout.sidebar": "Показать боковую панель проводника",
   "view.layout.editor": "Показать редактор",
   "view.layout.preview": "Показать предпросмотр",
+  "view.layout.resetSplit": "Сбросить разделение редактора и предпросмотра",
   "view.layout.statusbar": "Показать строку состояния",
   "view.layout.assistant": "Показать боковую панель ИИ-помощника",
   "view.layout.reset": "Сбросить макет",

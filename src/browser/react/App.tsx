@@ -3,7 +3,6 @@ import {
   Group,
   Panel,
   Separator,
-  type GroupImperativeHandle,
   type PanelImperativeHandle,
   type PanelSize,
 } from 'react-resizable-panels';
@@ -138,10 +137,6 @@ export const App: React.FC<AppProps> = ({
     registerSetManagers?.(setManagers);
   }
 
-  // Shared ref to the editor/preview Group so <EditorToolbar>'s
-  // split-reset button can call setLayout directly (no legacy DOM bridge).
-  const workspaceGroupRef = React.useRef<GroupImperativeHandle>(null);
-
   return (
     <ManagersProvider value={managers}>
       <SettingsContextProvider>
@@ -161,10 +156,7 @@ export const App: React.FC<AppProps> = ({
                         <FilesProvider>
                           <FileTreeProvider>
                             <TitleBar />
-                            <LayoutContent
-                              onEditorReady={onEditorReady}
-                              workspaceGroupRef={workspaceGroupRef}
-                            />
+                            <LayoutContent onEditorReady={onEditorReady} />
                             <LazyModals />
                             <ConfirmToolCall />
                             <Toaster
@@ -190,19 +182,13 @@ export const App: React.FC<AppProps> = ({
 
 const LayoutContent: React.FC<{
   onEditorReady?: () => void;
-  workspaceGroupRef: React.RefObject<GroupImperativeHandle | null>;
-}> = ({ onEditorReady, workspaceGroupRef }) => {
+}> = ({ onEditorReady }) => {
   const { toolbarVisible, tabBarVisible, statusBarVisible } = useUIState();
   return (
     <>
-      {toolbarVisible && (
-        <EditorToolbar workspaceGroupRef={workspaceGroupRef} />
-      )}
+      {toolbarVisible && <EditorToolbar />}
       {tabBarVisible && <TabBar />}
-      <Shell
-        onEditorReady={onEditorReady}
-        workspaceGroupRef={workspaceGroupRef}
-      />
+      <Shell onEditorReady={onEditorReady} />
       {statusBarVisible && <Navbar />}
     </>
   );
@@ -442,8 +428,7 @@ const LazyModals: React.FC = () => {
  */
 export const Shell: React.FC<{
   onEditorReady?: () => void;
-  workspaceGroupRef: React.RefObject<GroupImperativeHandle | null>;
-}> = ({ onEditorReady, workspaceGroupRef }) => {
+}> = ({ onEditorReady }) => {
   const {
     sidebarOpen,
     rightSidebarOpen,
@@ -508,7 +493,7 @@ export const Shell: React.FC<{
         )}
       />
       <Panel id="workspace-pane">
-        <Workspace groupRef={workspaceGroupRef} onEditorReady={onEditorReady} />
+        <Workspace onEditorReady={onEditorReady} />
       </Panel>
       {showAssistant && (
         <>

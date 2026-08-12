@@ -34,6 +34,21 @@
   height: 100%;
 }
 
+.editor-width-container {
+  container-type: inline-size;
+}
+
+.editor-width-surface {
+  width: var(--mk-editor-text-width, 100%);
+  margin-inline: auto;
+}
+
+@container (max-width: 320px) {
+  .editor-width-surface {
+    width: 100%;
+  }
+}
+
 // Auto mode is driven by actual scroll events rather than Monaco's native
 // hover behavior. The provider removes `scrollbar-scrolling` after 1000ms.
 .monaco-editor[data-scrollbar-visibility='auto']
