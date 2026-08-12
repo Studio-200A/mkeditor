@@ -350,6 +350,40 @@ describe('SettingsProvider.loadSettingsFromLocalStorage (web)', () => {
       expect(node).toHaveClass('scrollbar-scrolling');
       jest.advanceTimersByTime(1);
       expect(node).not.toHaveClass('scrollbar-scrolling');
+
+      jest.spyOn(node, 'getBoundingClientRect').mockReturnValue({
+        left: 0,
+        top: 0,
+        right: 800,
+        bottom: 600,
+        width: 800,
+        height: 600,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      });
+      const scrollbar = document.createElement('div');
+      scrollbar.className = 'scrollbar vertical';
+      scrollbar.addEventListener('mousemove', (event) =>
+        event.stopPropagation(),
+      );
+      node.appendChild(scrollbar);
+      scrollbar.dispatchEvent(
+        new MouseEvent('mousemove', {
+          bubbles: true,
+          clientX: 795,
+          clientY: 300,
+        }),
+      );
+      expect(node).toHaveClass('scrollbar-hover');
+      node.dispatchEvent(
+        new MouseEvent('mousemove', {
+          bubbles: true,
+          clientX: 400,
+          clientY: 300,
+        }),
+      );
+      expect(node).not.toHaveClass('scrollbar-hover');
     } finally {
       jest.useRealTimers();
     }

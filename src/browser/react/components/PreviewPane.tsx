@@ -101,9 +101,18 @@ export const PreviewPane: React.FC = () => {
         hideTimer = null;
       }, 1000);
     };
+    const onMouseMove = (event: MouseEvent) => {
+      const rect = node.getBoundingClientRect();
+      node.classList.toggle('scrollbar-hover', rect.right - event.clientX <= 8);
+    };
+    const onMouseLeave = () => node.classList.remove('scrollbar-hover');
     node.addEventListener('scroll', onScroll, { passive: true });
+    node.addEventListener('mousemove', onMouseMove, { passive: true });
+    node.addEventListener('mouseleave', onMouseLeave);
     return () => {
       node.removeEventListener('scroll', onScroll);
+      node.removeEventListener('mousemove', onMouseMove);
+      node.removeEventListener('mouseleave', onMouseLeave);
       if (hideTimer !== null) window.clearTimeout(hideTimer);
     };
   }, [settings.scrollbarVisibility]);

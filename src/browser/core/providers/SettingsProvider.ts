@@ -79,6 +79,9 @@ export class SettingsProvider {
     registerMonokaiProTheme(editor);
     this.loadSettings();
     this.mkeditor.onDidScrollChange(() => this.revealAutoScrollbars());
+    const node = this.mkeditor.getDomNode();
+    node?.addEventListener('mousemove', this.handleEditorScrollbarHover, true);
+    node?.addEventListener('mouseleave', this.clearEditorScrollbarHover);
   }
 
   // ---------------------------------------------------------------------
@@ -424,7 +427,9 @@ export class SettingsProvider {
     const node = this.mkeditor.getDomNode();
     if (node) {
       node.dataset.scrollbarVisibility = visibility;
-      if (visibility !== 'auto') node.classList.remove('scrollbar-scrolling');
+      if (visibility !== 'auto') {
+        node.classList.remove('scrollbar-scrolling', 'scrollbar-hover');
+      }
     }
     if (visibility !== 'auto' && this.scrollbarHideTimer !== null) {
       window.clearTimeout(this.scrollbarHideTimer);
@@ -446,6 +451,20 @@ export class SettingsProvider {
       this.scrollbarHideTimer = null;
     }, 1000);
   }
+
+  private handleEditorScrollbarHover = (event: MouseEvent) => {
+    if (this.currentSettings.scrollbarVisibility !== 'auto') return;
+    const node = this.mkeditor.getDomNode();
+    if (!node) return;
+    const rect = node.getBoundingClientRect();
+    const overTrack =
+      rect.right - event.clientX <= 14 || rect.bottom - event.clientY <= 12;
+    node.classList.toggle('scrollbar-hover', overTrack);
+  };
+
+  private clearEditorScrollbarHover = () => {
+    this.mkeditor.getDomNode()?.classList.remove('scrollbar-hover');
+  };
 
   public setWordWrap() {
     this.mkeditor.updateOptions({

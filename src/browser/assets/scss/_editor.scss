@@ -55,12 +55,18 @@
   .monaco-scrollable-element
   > .scrollbar {
   opacity: 0 !important;
-  pointer-events: none !important;
+  pointer-events: auto !important;
 }
 
 .monaco-editor[data-scrollbar-visibility='auto'].scrollbar-scrolling
   .monaco-scrollable-element
-  > .scrollbar {
+  > .scrollbar,
+.monaco-editor[data-scrollbar-visibility='auto'].scrollbar-hover
+  .monaco-scrollable-element
+  > .scrollbar,
+.monaco-editor[data-scrollbar-visibility='auto']
+  .monaco-scrollable-element
+  > .scrollbar:hover {
   opacity: 1 !important;
   pointer-events: auto !important;
 }

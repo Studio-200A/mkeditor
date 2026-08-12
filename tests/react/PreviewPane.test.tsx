@@ -86,6 +86,28 @@ describe('<PreviewPane>', () => {
     }
   });
 
+  it('reveals the auto-hidden scrollbar when the pointer reaches its track', () => {
+    renderWithProviders(<PreviewPane />);
+    const preview = document.getElementById('preview')!;
+    jest.spyOn(preview, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      right: 500,
+      bottom: 600,
+      width: 500,
+      height: 600,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+
+    fireEvent.mouseMove(preview, { clientX: 496, clientY: 300 });
+    expect(preview).toHaveClass('scrollbar-hover');
+
+    fireEvent.mouseMove(preview, { clientX: 250, clientY: 300 });
+    expect(preview).not.toHaveClass('scrollbar-hover');
+  });
+
   it('renders the initial markdown after the lazy Markdown chunk loads', async () => {
     const dispatcher = fakeDispatcher();
     const editorManager = {
